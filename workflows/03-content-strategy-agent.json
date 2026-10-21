@@ -1,0 +1,480 @@
+{
+  "name": "P4_ContentStrategy_MuzammilParacha",
+  "nodes": [
+    {
+      "parameters": {
+        "formTitle": "Project 4: Rug Content Strategy Builder",
+        "formDescription": "Upload your Project 2 and Project 3 reports, choose the rug category and campaign settings, then add audience and product context to generate a targeted, measurable content strategy.",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Product Category",
+              "fieldType": "dropdown",
+              "defaultValue": "Area Rugs",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "Area Rugs"
+                  },
+                  {
+                    "option": "Hallway Rugs"
+                  },
+                  {
+                    "option": "Outdoor Rugs"
+                  },
+                  {
+                    "option": "Other"
+                  }
+                ]
+              },
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Focus Area",
+              "placeholder": "e.g., Machine Washable, Natural Fibers, High Traffic, Pet Friendly, Budget Friendly"
+            },
+            {
+              "fieldLabel": "Target Audience",
+              "fieldType": "textarea",
+              "placeholder": "e.g., Young families with pets looking for stylish, durable, easy-care rugs"
+            },
+            {
+              "fieldLabel": "Campaign Goal",
+              "fieldType": "radio",
+              "defaultValue": "Engagement",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "Brand Awareness"
+                  },
+                  {
+                    "option": "Traffic"
+                  },
+                  {
+                    "option": "Engagement"
+                  },
+                  {
+                    "option": "Conversion"
+                  },
+                  {
+                    "option": "Retention"
+                  }
+                ]
+              },
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Season / Occasion",
+              "fieldType": "dropdown",
+              "defaultValue": "Evergreen",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "Evergreen"
+                  },
+                  {
+                    "option": "Spring Refresh"
+                  },
+                  {
+                    "option": "Summer"
+                  },
+                  {
+                    "option": "Back to School"
+                  },
+                  {
+                    "option": "Fall Refresh"
+                  },
+                  {
+                    "option": "Holiday"
+                  },
+                  {
+                    "option": "New Year / Organization"
+                  }
+                ]
+              },
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Primary Channel",
+              "fieldType": "dropdown",
+              "defaultValue": "Multi-channel",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "Multi-channel"
+                  },
+                  {
+                    "option": "Instagram"
+                  },
+                  {
+                    "option": "TikTok"
+                  },
+                  {
+                    "option": "Pinterest"
+                  },
+                  {
+                    "option": "Email"
+                  },
+                  {
+                    "option": "Blog / SEO"
+                  },
+                  {
+                    "option": "Facebook"
+                  },
+                  {
+                    "option": "Paid Social"
+                  }
+                ]
+              },
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Competitor Focus",
+              "fieldType": "dropdown",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "Ruggable"
+                  },
+                  {
+                    "option": "IKEA"
+                  },
+                  {
+                    "option": "Amazon"
+                  },
+                  {
+                    "option": "Walmart"
+                  },
+                  {
+                    "option": "Target"
+                  },
+                  {
+                    "option": "Bed Bath & Beyond / Overstock"
+                  }
+                ]
+              }
+            },
+            {
+              "fieldLabel": "Product Focus",
+              "fieldType": "textarea",
+              "placeholder": "Optional rug name, URL, style, material, size, feature, or collection to emphasize"
+            },
+            {
+              "fieldLabel": "KPI Focus",
+              "fieldType": "checkbox",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "CTR"
+                  },
+                  {
+                    "option": "Conversion Rate"
+                  },
+                  {
+                    "option": "Engagement Rate"
+                  },
+                  {
+                    "option": "Saves / Pins"
+                  },
+                  {
+                    "option": "Organic Traffic"
+                  },
+                  {
+                    "option": "Revenue"
+                  },
+                  {
+                    "option": "Email Open Rate"
+                  },
+                  {
+                    "option": "Add-to-Cart Rate"
+                  }
+                ]
+              },
+              "limitSelection": "range",
+              "minSelections": 1,
+              "maxSelections": 3,
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "P2 Market Analysis Report",
+              "fieldType": "file",
+              "acceptFileTypes": ".html",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "P3 Competitor Analysis Report",
+              "fieldType": "file",
+              "acceptFileTypes": ".html",
+              "requiredField": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.3,
+      "position": [
+        -240,
+        -64
+      ],
+      "id": "c91a40ec-0556-4bfc-bd5b-efb3d857b31c",
+      "name": "Upload Form"
+    },
+    {
+      "parameters": {
+        "jsCode": "const item = $input.first();\nconst form = item.json || {};\nconst binary = item.binary || {};\n\nconst getField = (name, fallback = '') => {\n  const value = form[name];\n  if (value === undefined || value === null || value === '') return fallback;\n\n  // n8n dropdown multiselect / checkbox fields may return arrays.\n  // Normalize them to a clean comma-separated string for the AI prompt and HTML report.\n  if (Array.isArray(value)) {\n    const cleaned = value\n      .map(v => String(v).trim())\n      .filter(Boolean);\n    return cleaned.length ? cleaned.join(', ') : fallback;\n  }\n\n  if (typeof value === 'string') return value.trim();\n  return value;\n};\n\nconst category = getField('Product Category', 'Area Rugs');\nconst focus = getField('Focus Area', '');\nconst targetAudience = getField('Target Audience', 'General home shoppers');\nconst campaignGoal = getField('Campaign Goal', 'Content engagement');\nconst season = getField('Season / Occasion', 'Evergreen');\nconst primaryChannel = getField('Primary Channel', 'Multi-channel');\nconst competitorFocus = getField('Competitor Focus', '');\nconst productFocus = getField('Product Focus', '');\nconst kpiFocus = getField('KPI Focus', 'Engagement and conversion');\n\nconst normalizeKey = (s = '') =>\n  String(s).toLowerCase().replace(/[^a-z0-9]/g, '');\n\nasync function readBinaryProperty(propName) {\n  try {\n    const buf = await this.helpers.getBinaryDataBuffer(0, propName);\n    return buf.toString('utf8');\n  } catch (e) {\n    return '';\n  }\n}\n\nasync function extractFile(fieldName, ordinal = 0) {\n  const jsonValue = form[fieldName];\n\n  // 1) Direct string content\n  if (typeof jsonValue === 'string' && /<[^>]+>/.test(jsonValue)) {\n    return jsonValue;\n  }\n\n  // 2) JSON object containing base64 data\n  if (jsonValue && typeof jsonValue === 'object' && jsonValue.data) {\n    try {\n      return Buffer.from(jsonValue.data, 'base64').toString('utf8');\n    } catch (e) {}\n  }\n\n  // 3) Exact binary property match\n  if (binary[fieldName]) {\n    const txt = await readBinaryProperty.call(this, fieldName);\n    if (txt) return txt;\n  }\n\n  // 4) Normalized binary key match\n  const target = normalizeKey(fieldName);\n  for (const key of Object.keys(binary)) {\n    if (normalizeKey(key) === target) {\n      const txt = await readBinaryProperty.call(this, key);\n      if (txt) return txt;\n    }\n  }\n\n  // 5) Match by uploaded filename / field-like metadata\n  const entries = Object.entries(binary);\n  for (const [key, meta] of entries) {\n    const haystack = normalizeKey(\n      `${key} ${meta?.fileName || ''} ${meta?.fileExtension || ''}`\n    );\n    const tokens = fieldName\n      .toLowerCase()\n      .split(/\\s+/)\n      .filter(t => t.length >= 2)\n      .map(normalizeKey);\n\n    const score = tokens.filter(t => haystack.includes(t)).length;\n    if (score >= 2) {\n      const txt = await readBinaryProperty.call(this, key);\n      if (txt) return txt;\n    }\n  }\n\n  // 6) Final fallback: use HTML files by order\n  const htmlCandidates = entries.filter(([_, meta]) => {\n    const mime = String(meta?.mimeType || '').toLowerCase();\n    const name = String(meta?.fileName || '').toLowerCase();\n    return mime.includes('html') || name.endsWith('.html');\n  });\n\n  if (htmlCandidates[ordinal]) {\n    const txt = await readBinaryProperty.call(this, htmlCandidates[ordinal][0]);\n    if (txt) return txt;\n  }\n\n  return '';\n}\n\nconst stripHtml = (html = '') => {\n  return String(html)\n    .replace(/<script[^>]*>[\\s\\S]*?<\\/script>/gi, ' ')\n    .replace(/<style[^>]*>[\\s\\S]*?<\\/style>/gi, ' ')\n    .replace(/<\\/(p|div|section|article|li|h[1-6]|tr)>/gi, '\\n')\n    .replace(/<br\\s*\\/?>/gi, '\\n')\n    .replace(/<[^>]+>/g, ' ')\n    .replace(/&nbsp;/gi, ' ')\n    .replace(/&amp;/gi, '&')\n    .replace(/&quot;/gi, '\"')\n    .replace(/&#39;/gi, \"'\")\n    .replace(/&lt;/gi, '<')\n    .replace(/&gt;/gi, '>')\n    .replace(/[ \\t]+/g, ' ')\n    .replace(/\\n\\s*\\n+/g, '\\n')\n    .trim();\n};\n\nconst p2Raw = await extractFile.call(this, 'P2 Market Analysis Report', 0);\nconst p3Raw = await extractFile.call(this, 'P3 Competitor Analysis Report', 1);\n\nconst p2Text = stripHtml(p2Raw);\nconst p3Text = stripHtml(p3Raw);\n\nconst MAX_REPORT_LENGTH = 24000;\nconst p2Content = p2Text.slice(0, MAX_REPORT_LENGTH);\nconst p3Content = p3Text.slice(0, MAX_REPORT_LENGTH);\n\nconst warnings = [];\nif (!p2Content) warnings.push('P2 Market Analysis content could not be extracted.');\nif (!p3Content) warnings.push('P3 Competitor Analysis content could not be extracted.');\nif (p2Text.length > MAX_REPORT_LENGTH) warnings.push('P2 report was truncated before being sent to the AI.');\nif (p3Text.length > MAX_REPORT_LENGTH) warnings.push('P3 report was truncated before being sent to the AI.');\n\nconst strategyContext = {\n  product_category: category,\n  focus_area: focus,\n  target_audience: targetAudience,\n  campaign_goal: campaignGoal,\n  season_or_occasion: season,\n  primary_channel: primaryChannel,\n  competitor_focus: competitorFocus,\n  product_focus: productFocus,\n  kpi_focus: kpiFocus\n};\n\nconst aiPrompt = `You are a senior content strategist for Wayfair specializing in rug merchandising and content. Build a data-grounded, brand-appropriate content strategy using the supplied Project 2 and Project 3 report text plus the selected campaign context.\n\nCRITICAL EXECUTION RULES\n1. The values below are already injected by n8n. Use the ACTUAL values you receive.\n2. NEVER output template syntax such as ${category}, ${season}, ${targetAudience}, or any other {{ ... }} placeholder.\n3. Never invent percentages, prices, competitor claims, trends, customer concerns, or performance results.\n4. If a factual claim is not supported by Project 2 or Project 3, say \"Not available in source reports\".\n5. Recommendations may go beyond the source facts, but clearly frame them as recommendations, hypotheses, or creative directions.\n6. Distinguish observed source facts from recommendations.\n7. Avoid generic AI language such as \"elevate your space\", \"curated selection\", \"seamlessly blends\", \"timeless elegance\", and \"in today's fast-paced world\".\n8. Use a warm, specific, conversational Wayfair-style voice: helpful, practical, accessible, design-aware, and human.\n9. Make recommendations actionable for the supplied audience, goal, season, channel, competitor focus, product focus, and KPI focus.\n10. For success targets, do NOT fabricate benchmarks. Use relative testing targets such as \"Beat current baseline\" or \"Improve versus control\" when no benchmark is supported.\n11. Keep recommendations relevant to the selected rug category.\n12. When supported by source reports, consider rug decision factors such as size, material, durability, washability, indoor/outdoor use, traffic level, styling, care, price, ratings, and reviews.\n13. Do not claim Wayfair brand attributes as measured facts unless supported by sources. Brand-voice guidance should be presented as a recommended communication style based on the campaign brief.\n14. Return VALID JSON ONLY. No markdown fences. No commentary before or after the JSON.\n\nSTRATEGY CONTEXT\nProduct Category: ${category}\nFocus Area: ${focus}\nTarget Audience: ${targetAudience}\nCampaign Goal: ${campaignGoal}\nSeason / Occasion: ${season}\nPrimary Channel: ${primaryChannel}\nCompetitor Focus: ${competitorFocus}\nProduct Focus: ${productFocus}\nKPI Focus: ${kpiFocus}\n\n=== PROJECT 2: MARKET ANALYSIS ===\n${p2Content}\n\n=== PROJECT 3: COMPETITOR ANALYSIS ===\n${p3Content}\n\nReturn this exact JSON structure:\n\n{\n  \"key_metrics\": [\n    {\n      \"value\": \"...\",\n      \"label\": \"...\",\n      \"source\": \"P2 or P3\",\n      \"evidence\": \"short source-grounded explanation\"\n    }\n  ],\n  \"data_foundation\": {\n    \"p2_insights\": [\"...\"],\n    \"p3_insights\": [\"...\"]\n  },\n  \"executive_summary\": \"...\",\n  \"executive_recommendation\": {\n    \"primary_opportunity\": \"...\",\n    \"why_it_matters\": \"...\",\n    \"recommended_move\": \"...\"\n  },\n  \"brand_voice\": {\n    \"tone\": \"...\",\n    \"commercial_human_balance\": \"...\",\n    \"emotion_evoked\": \"...\",\n    \"cta_style\": \"...\",\n    \"avoid\": [\"...\"],\n    \"ai_agent_emulation\": \"...\"\n  },\n  \"why_this_feels_wayfair\": \"...\",\n  \"audience_strategy\": {\n    \"audience\": \"...\",\n    \"need_state\": \"...\",\n    \"message_angle\": \"...\",\n    \"channel_rationale\": \"...\"\n  },\n  \"hero_recommendation\": {\n    \"title\": \"...\",\n    \"reason\": \"...\",\n    \"concept\": \"...\",\n    \"channel\": \"...\",\n    \"cta\": \"...\",\n    \"primary_kpi\": \"...\"\n  },\n  \"content_ideas\": [\n    {\n      \"type\": \"...\",\n      \"title\": \"...\",\n      \"description\": \"...\",\n      \"data_connection\": \"...\",\n      \"cta\": \"...\",\n      \"funnel_stage\": \"Awareness, Consideration, Conversion, or Retention\",\n      \"visual_direction\": \"...\",\n      \"seo_keywords\": [\"...\"]\n    }\n  ],\n  \"content_funnel\": [\n    {\n      \"stage\": \"Awareness\",\n      \"objective\": \"...\",\n      \"content\": \"...\",\n      \"message\": \"...\",\n      \"cta\": \"...\",\n      \"kpi\": \"...\"\n    }\n  ],\n  \"social_captions\": {\n    \"instagram\": [\n      {\n        \"caption\": \"...\",\n        \"hashtags\": [\"...\"],\n        \"visual_direction\": \"...\",\n        \"goal\": \"...\"\n      }\n    ],\n    \"pinterest\": [\n      {\n        \"title\": \"...\",\n        \"description\": \"...\",\n        \"visual_direction\": \"...\",\n        \"goal\": \"...\"\n      }\n    ],\n    \"facebook\": [\n      {\n        \"post\": \"...\",\n        \"visual_direction\": \"...\",\n        \"goal\": \"...\"\n      }\n    ],\n    \"tiktok\": [\n      {\n        \"hook\": \"...\",\n        \"script\": \"...\",\n        \"cta\": \"...\",\n        \"visual_direction\": \"...\",\n        \"goal\": \"...\"\n      }\n    ]\n  },\n  \"campaigns\": [\n    {\n      \"name\": \"...\",\n      \"tagline\": \"...\",\n      \"description\": \"...\",\n      \"details\": {\n        \"content_pillars\": \"...\",\n        \"format\": \"...\",\n        \"competitive_angle\": \"...\",\n        \"timing\": \"...\",\n        \"audience\": \"...\"\n      }\n    }\n  ],\n  \"competitive_angles\": [\n    {\n      \"title\": \"...\",\n      \"competitor_gap\": \"...\",\n      \"wayfair_opportunity\": \"...\",\n      \"source_basis\": \"...\"\n    }\n  ],\n  \"content_priorities\": [\n    {\n      \"priority\": 1,\n      \"title\": \"...\",\n      \"rationale\": \"...\",\n      \"effort\": \"Low, Medium, or High\",\n      \"impact\": \"Low, Medium, or High\"\n    }\n  ],\n  \"performance_plan\": [\n    {\n      \"content_or_campaign\": \"...\",\n      \"primary_kpi\": \"...\",\n      \"secondary_kpi\": \"...\",\n      \"success_target\": \"...\",\n      \"test_hypothesis\": \"...\",\n      \"variant_a\": \"...\",\n      \"variant_b\": \"...\",\n      \"optimization_action\": \"...\"\n    }\n  ],\n  \"quick_wins\": [\n    {\n      \"action\": \"...\",\n      \"why_now\": \"...\",\n      \"owner\": \"Content, Social, SEO, CRM, Merchandising, or Analytics\"\n    }\n  ]\n}\n\nMINIMUM OUTPUT\n- 3 to 5 key metrics only when supported by the supplied reports.\n- 4 P2 insights and 4 P3 insights when available.\n- One concise executive recommendation with Primary Opportunity, Why It Matters, and Recommended Move.\n- One complete Brand Voice section.\n- One Hero Recommendation tailored to the selected channel and goal.\n- 6 content ideas.\n- At least 1 content idea aligned directly to the primary channel.\n- A 4-stage content funnel: Awareness, Consideration, Conversion, Retention.\n- At least 1 social example for Instagram, Pinterest, Facebook, and TikTok, each with visual direction and goal.\n- 3 campaigns.\n- 3 competitive angles.\n- 4 content priorities.\n- 4 performance-plan tests.\n- 3 quick wins.\n`;\n\nreturn [{\n  json: {\n    category,\n    focus,\n    target_audience: targetAudience,\n    campaign_goal: campaignGoal,\n    season,\n    primary_channel: primaryChannel,\n    competitor_focus: competitorFocus,\n    product_focus: productFocus,\n    kpi_focus: kpiFocus,\n    strategy_context: strategyContext,\n    p2_content: p2Content,\n    p3_content: p3Content,\n    ai_prompt: aiPrompt,\n    metadata: {\n      p2_characters_original: p2Text.length,\n      p3_characters_original: p3Text.length,\n      p2_characters_sent: p2Content.length,\n      p3_characters_sent: p3Content.length,\n      p2_truncated: p2Text.length > MAX_REPORT_LENGTH,\n      p3_truncated: p3Text.length > MAX_REPORT_LENGTH,\n      warnings\n    }\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        0,
+        -64
+      ],
+      "id": "e7b7bd24-9e58-4978-8343-e2369b34c9de",
+      "name": "Extract & Normalize Inputs"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.ai_prompt }}",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [
+        272,
+        -64
+      ],
+      "id": "59836051-19ea-4e27-9d6d-3487e07d2d7f",
+      "name": "AI Content Strategy"
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $input.first().json || {};\nconst rawOutput = input.output ?? input.text ?? '';\nconst source = $('Extract & Normalize Inputs').first().json;\n\nlet raw = String(rawOutput)\n  .replace(/```json/gi, '')\n  .replace(/```/g, '')\n  .trim();\n\nconst match = raw.match(/\\{[\\s\\S]*\\}/);\nif (match) raw = match[0];\n\nlet content = null;\nlet parseError = '';\n\ntry {\n  content = JSON.parse(raw);\n} catch (e) {\n  parseError = e.message;\n  content = {\n    key_metrics: [],\n    data_foundation: { p2_insights: [], p3_insights: [] },\n    executive_summary: '',\n    executive_recommendation: {},\n    brand_voice: {},\n    why_this_feels_wayfair: '',\n    audience_strategy: {},\n    hero_recommendation: {},\n    content_ideas: [],\n    content_funnel: [],\n    social_captions: {\n      instagram: [],\n      pinterest: [],\n      facebook: [],\n      tiktok: []\n    },\n    campaigns: [],\n    competitive_angles: [],\n    content_priorities: [],\n    performance_plan: [],\n    quick_wins: []\n  };\n}\n\n// Fallback protection: if the model ever echoes n8n template placeholders,\n// resolve the common campaign-context placeholders before the report is built.\nconst replacements = {\n  '{{ $json.category }}': source.category || '',\n  '{{ $json.focus }}': source.focus || '',\n  '{{ $json.target_audience }}': source.target_audience || '',\n  '{{ $json.campaign_goal }}': source.campaign_goal || '',\n  '{{ $json.season }}': source.season || '',\n  '{{ $json.primary_channel }}': source.primary_channel || '',\n  '{{ $json.competitor_focus }}': source.competitor_focus || '',\n  '{{ $json.product_focus }}': source.product_focus || '',\n  '{{ $json.kpi_focus }}': source.kpi_focus || ''\n};\n\nconst resolveString = (s) => {\n  let out = String(s ?? '');\n  for (const [needle, value] of Object.entries(replacements)) {\n    out = out.split(needle).join(String(value ?? ''));\n  }\n  // Remove any still-unresolved simple $json placeholder rather than exposing it.\n  out = out.replace(/\\{\\{\\s*\\$json\\.[^}]+\\}\\}/g, '');\n  return out;\n};\n\nconst resolveDeep = (value) => {\n  if (Array.isArray(value)) return value.map(resolveDeep);\n  if (value && typeof value === 'object') {\n    return Object.fromEntries(\n      Object.entries(value).map(([k, v]) => [k, resolveDeep(v)])\n    );\n  }\n  if (typeof value === 'string') return resolveString(value);\n  return value;\n};\n\ncontent = resolveDeep(content);\n\nreturn [{\n  json: {\n    content,\n    category: source.category,\n    focus: source.focus,\n    target_audience: source.target_audience,\n    campaign_goal: source.campaign_goal,\n    season: source.season,\n    primary_channel: source.primary_channel,\n    competitor_focus: source.competitor_focus,\n    product_focus: source.product_focus,\n    kpi_focus: source.kpi_focus,\n    input_metadata: source.metadata,\n    parse_status: parseError ? 'error' : 'ok',\n    parse_error: parseError,\n    raw_output_preview: parseError ? raw.slice(0, 1500) : ''\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        576,
+        -64
+      ],
+      "id": "ead635e1-d11e-49c6-8fab-72aaf99087f4",
+      "name": "Parse AI JSON"
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = $input.first().json || {};\nconst c = data.content || {};\n\nconst arr = (v) => Array.isArray(v) ? v : [];\nconst obj = (v) => (v && typeof v === 'object' && !Array.isArray(v)) ? v : {};\nconst text = (v, fallback = '') =>\n  (v === undefined || v === null) ? fallback : String(v).trim();\n\nconst normalizeMetrics = arr(c.key_metrics)\n  .filter(x => x && (x.value || x.label))\n  .map(x => ({\n    value: text(x.value, 'Not available'),\n    label: text(x.label, 'Metric'),\n    source: text(x.source, 'Source not specified'),\n    evidence: text(x.evidence, '')\n  }));\n\nconst social = obj(c.social_captions);\nconst brand = obj(c.brand_voice);\nconst execRec = obj(c.executive_recommendation);\nconst hero = obj(c.hero_recommendation);\n\nconst normalized = {\n  key_metrics: normalizeMetrics,\n  data_foundation: {\n    p2_insights: arr(obj(c.data_foundation).p2_insights).map(x => text(x)).filter(Boolean),\n    p3_insights: arr(obj(c.data_foundation).p3_insights).map(x => text(x)).filter(Boolean)\n  },\n  executive_summary: text(c.executive_summary),\n  executive_recommendation: {\n    primary_opportunity: text(execRec.primary_opportunity),\n    why_it_matters: text(execRec.why_it_matters),\n    recommended_move: text(execRec.recommended_move)\n  },\n  brand_voice: {\n    tone: text(brand.tone),\n    commercial_human_balance: text(brand.commercial_human_balance),\n    emotion_evoked: text(brand.emotion_evoked),\n    cta_style: text(brand.cta_style),\n    avoid: arr(brand.avoid).map(x => text(x)).filter(Boolean),\n    ai_agent_emulation: text(brand.ai_agent_emulation)\n  },\n  why_this_feels_wayfair: text(c.why_this_feels_wayfair),\n  audience_strategy: {\n    audience: text(obj(c.audience_strategy).audience, data.target_audience),\n    need_state: text(obj(c.audience_strategy).need_state),\n    message_angle: text(obj(c.audience_strategy).message_angle),\n    channel_rationale: text(obj(c.audience_strategy).channel_rationale)\n  },\n  hero_recommendation: {\n    title: text(hero.title, 'Recommended content move'),\n    reason: text(hero.reason),\n    concept: text(hero.concept),\n    channel: text(hero.channel, data.primary_channel),\n    cta: text(hero.cta),\n    primary_kpi: text(hero.primary_kpi, data.kpi_focus)\n  },\n  content_ideas: arr(c.content_ideas).map(x => ({\n    type: text(x?.type, 'Content'),\n    title: text(x?.title, 'Untitled idea'),\n    description: text(x?.description),\n    data_connection: text(x?.data_connection),\n    cta: text(x?.cta),\n    funnel_stage: text(x?.funnel_stage),\n    visual_direction: text(x?.visual_direction),\n    seo_keywords: arr(x?.seo_keywords).map(k => text(k)).filter(Boolean)\n  })),\n  content_funnel: arr(c.content_funnel).map(x => ({\n    stage: text(x?.stage),\n    objective: text(x?.objective),\n    content: text(x?.content),\n    message: text(x?.message),\n    cta: text(x?.cta),\n    kpi: text(x?.kpi)\n  })),\n  social_captions: {\n    instagram: arr(social.instagram).map(x => ({\n      caption: text(x?.caption),\n      hashtags: arr(x?.hashtags).map(h => text(h)).filter(Boolean),\n      visual_direction: text(x?.visual_direction),\n      goal: text(x?.goal)\n    })),\n    pinterest: arr(social.pinterest).map(x => ({\n      title: text(x?.title),\n      description: text(x?.description),\n      visual_direction: text(x?.visual_direction),\n      goal: text(x?.goal)\n    })),\n    facebook: arr(social.facebook).map(x => ({\n      post: text(x?.post),\n      visual_direction: text(x?.visual_direction),\n      goal: text(x?.goal)\n    })),\n    tiktok: arr(social.tiktok).map(x => ({\n      hook: text(x?.hook),\n      script: text(x?.script),\n      cta: text(x?.cta),\n      visual_direction: text(x?.visual_direction),\n      goal: text(x?.goal)\n    }))\n  },\n  campaigns: arr(c.campaigns).map(x => ({\n    name: text(x?.name, 'Campaign'),\n    tagline: text(x?.tagline),\n    description: text(x?.description),\n    details: obj(x?.details)\n  })),\n  competitive_angles: arr(c.competitive_angles).map(x => ({\n    title: text(x?.title),\n    competitor_gap: text(x?.competitor_gap),\n    wayfair_opportunity: text(x?.wayfair_opportunity),\n    source_basis: text(x?.source_basis)\n  })),\n  content_priorities: arr(c.content_priorities)\n    .map((x, i) => ({\n      priority: Number(x?.priority) || i + 1,\n      title: text(x?.title, `Priority ${i + 1}`),\n      rationale: text(x?.rationale),\n      effort: text(x?.effort, 'Not specified'),\n      impact: text(x?.impact, 'Not specified')\n    }))\n    .sort((a, b) => a.priority - b.priority),\n  performance_plan: arr(c.performance_plan).map(x => ({\n    content_or_campaign: text(x?.content_or_campaign),\n    primary_kpi: text(x?.primary_kpi, data.kpi_focus),\n    secondary_kpi: text(x?.secondary_kpi),\n    success_target: text(x?.success_target, 'Beat current baseline'),\n    test_hypothesis: text(x?.test_hypothesis),\n    variant_a: text(x?.variant_a),\n    variant_b: text(x?.variant_b),\n    optimization_action: text(x?.optimization_action)\n  })),\n  quick_wins: arr(c.quick_wins).map(x => ({\n    action: text(x?.action),\n    why_now: text(x?.why_now),\n    owner: text(x?.owner)\n  }))\n};\n\nconst warnings = [\n  ...arr(data.input_metadata?.warnings),\n  ...(data.parse_status === 'error'\n    ? [`AI JSON parsing failed: ${data.parse_error}`]\n    : []),\n  ...(normalized.key_metrics.length === 0\n    ? ['No source-supported key metrics were returned.']\n    : []),\n  ...(normalized.data_foundation.p2_insights.length === 0\n    ? ['No Project 2 insights were returned.']\n    : []),\n  ...(normalized.data_foundation.p3_insights.length === 0\n    ? ['No Project 3 insights were returned.']\n    : [])\n];\n\nreturn [{\n  json: {\n    ...data,\n    content: normalized,\n    quality: {\n      warning_count: warnings.length,\n      warnings,\n      counts: {\n        key_metrics: normalized.key_metrics.length,\n        p2_insights: normalized.data_foundation.p2_insights.length,\n        p3_insights: normalized.data_foundation.p3_insights.length,\n        content_ideas: normalized.content_ideas.length,\n        funnel_rows: normalized.content_funnel.length,\n        campaigns: normalized.campaigns.length,\n        performance_tests: normalized.performance_plan.length,\n        quick_wins: normalized.quick_wins.length\n      }\n    }\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        768,
+        -64
+      ],
+      "id": "9391b9fe-fddb-437f-87d3-60c68d750800",
+      "name": "Reshape & Validate Strategy"
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = $input.first().json || {};\nconst c = data.content || {};\nconst q = data.quality || {};\nconst meta = data.input_metadata || {};\n\nconst esc = (s) => String(s ?? '')\n  .replace(/&/g, '&amp;')\n  .replace(/</g, '&lt;')\n  .replace(/>/g, '&gt;')\n  .replace(/\"/g, '&quot;');\n\nconst nl2br = (s) => esc(s).replace(/\\n/g, '<br>');\nconst arr = (v) => Array.isArray(v) ? v : [];\nconst obj = (v) => (v && typeof v === 'object' && !Array.isArray(v)) ? v : {};\n\nconst category = data.category || 'Area Rugs';\nconst focus = data.focus || '';\nconst today = new Date().toLocaleDateString('en-US', {\n  year: 'numeric',\n  month: 'long',\n  day: 'numeric'\n});\n\nconst impactClass = (value = '') => {\n  const v = String(value).toLowerCase();\n  if (v.includes('high')) return 'high';\n  if (v.includes('medium')) return 'medium';\n  if (v.includes('low')) return 'low';\n  return 'neutral';\n};\n\nconst contextItems = [\n  ['Audience', data.target_audience],\n  ['Goal', data.campaign_goal],\n  ['Season', data.season],\n  ['Channel', data.primary_channel],\n  ['Competitor', data.competitor_focus],\n  ['KPI', data.kpi_focus]\n].filter(([, v]) => v);\n\nconst contextHtml = contextItems.map(([k, v]) => `\n  <div class=\"context-item\">\n    <span>${esc(k)}</span>\n    <strong>${esc(v)}</strong>\n  </div>`).join('');\n\nconst sourceStatusHtml = `\n  <div class=\"source-status\">\n    <div class=\"source-status-item\">\n      <span>Project 2</span>\n      <strong>${meta.p2_characters_sent > 0 ? '✓ Loaded' : '⚠ Missing'}</strong>\n      <small>${esc(meta.p2_characters_sent || 0)} chars used</small>\n    </div>\n    <div class=\"source-status-item\">\n      <span>Project 3</span>\n      <strong>${meta.p3_characters_sent > 0 ? '✓ Loaded' : '⚠ Missing'}</strong>\n      <small>${esc(meta.p3_characters_sent || 0)} chars used</small>\n    </div>\n    <div class=\"source-status-item\">\n      <span>Supported metrics</span>\n      <strong>${esc(q.counts?.key_metrics ?? 0)}</strong>\n      <small>Returned by agent</small>\n    </div>\n    <div class=\"source-status-item\">\n      <span>Warnings</span>\n      <strong>${esc(q.warning_count ?? 0)}</strong>\n      <small>Validation notes</small>\n    </div>\n  </div>`;\n\nconst warningsHtml = arr(q.warnings).length\n  ? `<section class=\"quality-note\">\n      <div class=\"section-kicker\">Data quality</div>\n      <h2>Source notes to keep in mind</h2>\n      <ul>${arr(q.warnings).map(w => `<li>${esc(w)}</li>`).join('')}</ul>\n    </section>`\n  : '';\n\nconst metricsHtml = arr(c.key_metrics).length\n  ? arr(c.key_metrics).map(m => `\n      <article class=\"metric-card\">\n        <div class=\"metric-value\">${esc(m.value)}</div>\n        <div class=\"metric-label\">${esc(m.label)}</div>\n        <div class=\"metric-meta\">${esc(m.source)}</div>\n        ${m.evidence ? `<div class=\"metric-evidence\">${esc(m.evidence)}</div>` : ''}\n      </article>`).join('')\n  : `<div class=\"empty-state\">No source-supported metrics were returned for this run.</div>`;\n\nconst exec = obj(c.executive_recommendation);\nconst execHtml = `\n  <div class=\"exec-grid\">\n    <div class=\"exec-block primary\">\n      <span>Primary opportunity</span>\n      <p>${esc(exec.primary_opportunity || c.executive_summary || 'No recommendation returned.')}</p>\n    </div>\n    <div class=\"exec-block\">\n      <span>Why it matters</span>\n      <p>${esc(exec.why_it_matters || 'Not available')}</p>\n    </div>\n    <div class=\"exec-block action\">\n      <span>Recommended move</span>\n      <p>${esc(exec.recommended_move || 'Not available')}</p>\n    </div>\n  </div>`;\n\nconst brand = obj(c.brand_voice);\nconst avoidHtml = arr(brand.avoid).map(x => `<span>${esc(x)}</span>`).join('');\nconst brandHtml = `\n  <div class=\"brand-grid\">\n    <div class=\"brand-card\"><span>Tone</span><p>${esc(brand.tone || 'Not returned')}</p></div>\n    <div class=\"brand-card\"><span>Commercial + human</span><p>${esc(brand.commercial_human_balance || 'Not returned')}</p></div>\n    <div class=\"brand-card\"><span>Emotion</span><p>${esc(brand.emotion_evoked || 'Not returned')}</p></div>\n    <div class=\"brand-card\"><span>CTA style</span><p>${esc(brand.cta_style || 'Not returned')}</p></div>\n  </div>\n  <div class=\"brand-agent\">\n    <div>\n      <span>How the AI agent should emulate it</span>\n      <p>${esc(brand.ai_agent_emulation || 'Not returned')}</p>\n    </div>\n    ${avoidHtml ? `<div class=\"avoid\"><strong>Avoid</strong><div>${avoidHtml}</div></div>` : ''}\n  </div>\n  ${c.why_this_feels_wayfair ? `<div class=\"wayfair-feel\"><strong>Why this feels like Wayfair</strong><p>${esc(c.why_this_feels_wayfair)}</p></div>` : ''}`;\n\nconst audience = obj(c.audience_strategy);\nconst audienceHtml = [\n  ['Audience', audience.audience],\n  ['Need state', audience.need_state],\n  ['Message angle', audience.message_angle],\n  ['Channel rationale', audience.channel_rationale]\n].map(([label, value]) => `\n  <div class=\"strategy-item\">\n    <span class=\"strategy-label\">${esc(label)}</span>\n    <p>${esc(value || 'Not available in source reports')}</p>\n  </div>`).join('');\n\nconst dataColumn = (title, items, sourceLabel) => `\n  <div class=\"evidence-column\">\n    <div class=\"evidence-head\">\n      <span>${esc(sourceLabel)}</span>\n      <h3>${esc(title)}</h3>\n    </div>\n    <ul>\n      ${arr(items).map(x => `<li>${esc(x)}</li>`).join('') || '<li>No supported insight returned.</li>'}\n    </ul>\n  </div>`;\n\nconst hero = obj(c.hero_recommendation);\nconst heroHtml = `\n  <div class=\"hero-rec\">\n    <div class=\"hero-rec-copy\">\n      <span class=\"hero-rec-badge\">Recommended campaign move</span>\n      <h3>${esc(hero.title || 'Recommended content move')}</h3>\n      <p>${esc(hero.concept || '')}</p>\n      ${hero.reason ? `<div class=\"hero-rec-reason\"><strong>Why this one:</strong> ${esc(hero.reason)}</div>` : ''}\n    </div>\n    <div class=\"hero-rec-meta\">\n      <div><span>Channel</span><strong>${esc(hero.channel || data.primary_channel || '')}</strong></div>\n      <div><span>CTA</span><strong>${esc(hero.cta || '')}</strong></div>\n      <div><span>Primary KPI</span><strong>${esc(hero.primary_kpi || data.kpi_focus || '')}</strong></div>\n    </div>\n  </div>`;\n\nconst ideasHtml = arr(c.content_ideas).map((idea, idx) => `\n  <article class=\"idea-card\">\n    <div class=\"idea-topline\">\n      <span class=\"idea-number\">${String(idx + 1).padStart(2, '0')}</span>\n      <span class=\"content-type\">${esc(idea.type || 'Content')}</span>\n      ${idea.funnel_stage ? `<span class=\"funnel-chip\">${esc(idea.funnel_stage)}</span>` : ''}\n    </div>\n    <h3>${esc(idea.title)}</h3>\n    <p class=\"idea-copy\">${esc(idea.description)}</p>\n    ${idea.visual_direction ? `<div class=\"visual-box\"><strong>Visual direction</strong><span>${esc(idea.visual_direction)}</span></div>` : ''}\n    ${idea.data_connection ? `\n      <div class=\"evidence-strip\">\n        <strong>Why it is grounded</strong>\n        <span>${esc(idea.data_connection)}</span>\n      </div>` : ''}\n    ${idea.cta ? `\n      <div class=\"cta-row\">\n        <span>CTA</span>\n        <strong>${esc(idea.cta)}</strong>\n      </div>` : ''}\n    ${arr(idea.seo_keywords).length ? `\n      <div class=\"keyword-row\">\n        ${arr(idea.seo_keywords).map(k => `<span>${esc(k)}</span>`).join('')}\n      </div>` : ''}\n  </article>`).join('');\n\nconst funnelRows = arr(c.content_funnel).map(x => `\n  <tr>\n    <td><strong>${esc(x.stage)}</strong></td>\n    <td>${esc(x.objective)}</td>\n    <td>${esc(x.content)}</td>\n    <td>${esc(x.message)}</td>\n    <td>${esc(x.cta)}</td>\n    <td>${esc(x.kpi)}</td>\n  </tr>`).join('');\n\nconst social = obj(c.social_captions);\nconst socialItems = [\n  ...arr(social.instagram).map(x => ({\n    platform: 'Instagram',\n    title: 'Feed / Reel caption',\n    body: x.caption,\n    extra: arr(x.hashtags).join(' '),\n    visual: x.visual_direction,\n    goal: x.goal\n  })),\n  ...arr(social.pinterest).map(x => ({\n    platform: 'Pinterest',\n    title: x.title || 'Pin concept',\n    body: x.description,\n    extra: '',\n    visual: x.visual_direction,\n    goal: x.goal\n  })),\n  ...arr(social.facebook).map(x => ({\n    platform: 'Facebook',\n    title: 'Social post',\n    body: x.post,\n    extra: '',\n    visual: x.visual_direction,\n    goal: x.goal\n  })),\n  ...arr(social.tiktok).map(x => ({\n    platform: 'TikTok',\n    title: x.hook || 'Video hook',\n    body: x.script,\n    extra: x.cta ? `CTA: ${x.cta}` : '',\n    visual: x.visual_direction,\n    goal: x.goal\n  }))\n];\n\nconst platformClass = (platform) => String(platform || '').toLowerCase().replace(/[^a-z]/g, '');\n\nconst socialHtml = socialItems.map(x => `\n  <article class=\"social-post ${platformClass(x.platform)}\">\n    <div class=\"social-head\">\n      <span class=\"platform-dot\"></span>\n      <strong>${esc(x.platform)}</strong>\n    </div>\n    <h3>${esc(x.title)}</h3>\n    <p class=\"social-body\">${nl2br(x.body || '')}</p>\n    ${x.visual ? `<div class=\"social-brief\"><span>Visual direction</span><p>${esc(x.visual)}</p></div>` : ''}\n    ${x.goal ? `<div class=\"social-brief\"><span>Goal</span><p>${esc(x.goal)}</p></div>` : ''}\n    ${x.extra ? `<div class=\"social-extra\">${esc(x.extra)}</div>` : ''}\n  </article>`).join('');\n\nconst campaignsHtml = arr(c.campaigns).map((camp, idx) => {\n  const details = obj(camp.details);\n  const detailOrder = [\n    ['Content pillars', details.content_pillars],\n    ['Format', details.format],\n    ['Competitive angle', details.competitive_angle],\n    ['Timing', details.timing],\n    ['Audience', details.audience]\n  ].filter(([, v]) => v);\n\n  return `\n    <article class=\"campaign-row ${idx === 0 ? 'recommended' : ''}\">\n      <div class=\"campaign-index\">${String(idx + 1).padStart(2, '0')}</div>\n      <div class=\"campaign-main\">\n        ${idx === 0 ? `<span class=\"recommended-label\">Primary campaign</span>` : ''}\n        <div class=\"campaign-tagline\">${esc(camp.tagline)}</div>\n        <h3>${esc(camp.name)}</h3>\n        <p>${esc(camp.description)}</p>\n      </div>\n      <div class=\"campaign-details\">\n        ${detailOrder.map(([label, value]) => `\n          <div class=\"campaign-detail\">\n            <span>${esc(label)}</span>\n            <p>${esc(value)}</p>\n          </div>`).join('')}\n      </div>\n    </article>`;\n}).join('');\n\nconst anglesHtml = arr(c.competitive_angles).map((a, idx) => `\n  <article class=\"angle-row\">\n    <div class=\"angle-title\">\n      <span>Opportunity ${idx + 1}</span>\n      <h3>${esc(a.title)}</h3>\n    </div>\n    <div class=\"angle-side competitor-side\">\n      <span class=\"side-label\">Competitor gap</span>\n      <p>${esc(a.competitor_gap)}</p>\n    </div>\n    <div class=\"arrow\">→</div>\n    <div class=\"angle-side wayfair-side\">\n      <span class=\"side-label\">Wayfair response</span>\n      <p>${esc(a.wayfair_opportunity)}</p>\n      ${a.source_basis ? `<small>${esc(a.source_basis)}</small>` : ''}\n    </div>\n  </article>`).join('');\n\nconst prioritiesHtml = arr(c.content_priorities).map(p => `\n  <article class=\"priority-item\">\n    <div class=\"priority-rank\">${esc(p.priority)}</div>\n    <div class=\"priority-copy\">\n      <h3>${esc(p.title)}</h3>\n      <p>${esc(p.rationale)}</p>\n    </div>\n    <div class=\"priority-badges\">\n      <span class=\"badge ${impactClass(p.impact)}\">Impact: ${esc(p.impact)}</span>\n      <span class=\"badge neutral\">Effort: ${esc(p.effort)}</span>\n    </div>\n  </article>`).join('');\n\nconst performanceRows = arr(c.performance_plan).map((p, idx) => `\n  <tr>\n    <td>\n      <span class=\"table-test\">Test ${idx + 1}</span>\n      <strong>${esc(p.content_or_campaign)}</strong>\n    </td>\n    <td>${esc(p.primary_kpi)}</td>\n    <td>${esc(p.success_target)}</td>\n    <td>${esc(p.test_hypothesis)}</td>\n    <td>\n      <div><strong>A:</strong> ${esc(p.variant_a)}</div>\n      <div class=\"variant-b\"><strong>B:</strong> ${esc(p.variant_b)}</div>\n    </td>\n    <td>${esc(p.optimization_action)}</td>\n  </tr>`).join('');\n\nconst quickWinsHtml = arr(c.quick_wins).map((x, idx) => `\n  <article class=\"quick-win\">\n    <span class=\"quick-num\">${String(idx + 1).padStart(2, '0')}</span>\n    <div>\n      <h3>${esc(x.action)}</h3>\n      <p>${esc(x.why_now)}</p>\n      <span class=\"owner\">Owner: ${esc(x.owner)}</span>\n    </div>\n  </article>`).join('');\n\nconst html = `<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"UTF-8\">\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n<title>Wayfair Content Strategy | ${esc(category)}</title>\n<style>\n  :root{\n    --ink:#2f2532;\n    --muted:#756d79;\n    --line:#e9e3eb;\n    --soft:#f8f6f8;\n    --soft-2:#f2edf3;\n    --purple:#7f187f;\n    --purple-dark:#5f1166;\n    --purple-light:#f3e8f5;\n    --green:#19734a;\n    --green-soft:#e9f6ef;\n    --amber:#9a6700;\n    --amber-soft:#fff5dc;\n    --red:#a33a3a;\n    --red-soft:#fff0ef;\n    --white:#ffffff;\n  }\n\n  *{box-sizing:border-box}\n  html{scroll-behavior:smooth}\n  body{\n    margin:0;\n    background:#f4f2f4;\n    color:var(--ink);\n    font-family:Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Arial, sans-serif;\n    line-height:1.6;\n  }\n\n  .page{max-width:1180px;margin:0 auto;padding:32px 24px 48px}\n  .hero{\n    background:linear-gradient(135deg,var(--purple-dark),var(--purple));\n    color:#fff;\n    border-radius:24px;\n    padding:48px;\n    box-shadow:0 18px 44px rgba(81,24,86,.18);\n    position:relative;\n    overflow:hidden;\n  }\n  .hero:after{\n    content:\"\";\n    position:absolute;\n    width:320px;height:320px;border-radius:50%;\n    background:rgba(255,255,255,.08);\n    right:-100px;top:-120px;\n  }\n  .hero-kicker{font-size:12px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;opacity:.85}\n  .hero h1{font-size:42px;line-height:1.08;margin:12px 0 10px;max-width:760px}\n  .hero-sub{font-size:18px;margin:0;opacity:.9;max-width:800px}\n\n  .context-bar{\n    display:grid;\n    grid-template-columns:repeat(3,minmax(0,1fr));\n    gap:1px;\n    background:rgba(255,255,255,.18);\n    border:1px solid rgba(255,255,255,.18);\n    border-radius:14px;\n    overflow:hidden;\n    margin-top:30px;\n    position:relative;\n    z-index:1;\n  }\n  .context-item{background:rgba(61,9,69,.22);padding:13px 15px}\n  .context-item span{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.08em;opacity:.7}\n  .context-item strong{display:block;margin-top:3px;font-size:13px;font-weight:650}\n\n  .section{\n    background:var(--white);\n    border:1px solid var(--line);\n    border-radius:20px;\n    padding:32px;\n    margin-top:22px;\n    box-shadow:0 3px 14px rgba(42,31,45,.045);\n  }\n  .section-kicker{color:var(--purple);font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.11em;margin-bottom:6px}\n  .section-title{display:flex;justify-content:space-between;align-items:flex-end;gap:20px;margin-bottom:22px}\n  .section-title h2{font-size:28px;line-height:1.2;margin:0}\n  .section-title p{margin:0;color:var(--muted);max-width:560px;font-size:14px}\n  h3{line-height:1.3}\n\n  .source-status{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:18px}\n  .source-status-item{background:var(--soft);border:1px solid var(--line);border-radius:12px;padding:14px}\n  .source-status-item span,.source-status-item small{display:block;color:var(--muted);font-size:11px}\n  .source-status-item strong{display:block;margin:4px 0;font-size:15px}\n\n  .exec-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}\n  .exec-block{border:1px solid var(--line);border-radius:14px;padding:20px;background:#fff}\n  .exec-block.primary{grid-column:1 / -1;background:linear-gradient(135deg,#faf4fb,#f7f3f8);border-left:5px solid var(--purple)}\n  .exec-block.action{background:var(--purple-light)}\n  .exec-block span{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--purple);font-weight:800}\n  .exec-block p{margin:8px 0 0}\n\n  .metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px;margin-top:22px}\n  .metric-card{border:1px solid var(--line);border-radius:14px;padding:18px;background:#fff}\n  .metric-value{font-size:30px;font-weight:800;color:var(--purple-dark);line-height:1.15}\n  .metric-label{font-weight:750;margin-top:7px}\n  .metric-meta{font-size:12px;color:var(--muted);margin-top:3px}\n  .metric-evidence{font-size:12.5px;color:var(--muted);margin-top:10px;padding-top:10px;border-top:1px solid var(--line)}\n\n  .brand-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}\n  .brand-card{border:1px solid var(--line);border-radius:14px;padding:17px;background:#fff}\n  .brand-card span,.brand-agent span{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--purple);font-weight:800}\n  .brand-card p,.brand-agent p{margin:7px 0 0}\n  .brand-agent{margin-top:14px;border-radius:14px;background:var(--soft);padding:20px;display:grid;grid-template-columns:1.5fr 1fr;gap:20px}\n  .avoid strong{font-size:12px}\n  .avoid div{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}\n  .avoid span{background:#fff;border:1px solid var(--line);border-radius:999px;padding:5px 8px;color:#6b596e}\n  .wayfair-feel{margin-top:14px;border-left:4px solid var(--purple);padding:12px 16px;background:#fbf8fc;border-radius:0 10px 10px 0}\n  .wayfair-feel p{margin:5px 0 0}\n\n  .strategy-strip{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border:1px solid var(--line);border-radius:14px;overflow:hidden}\n  .strategy-item{padding:20px;border-right:1px solid var(--line);background:#fff}\n  .strategy-item:last-child{border-right:none}\n  .strategy-label{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--purple)}\n  .strategy-item p{margin:8px 0 0;font-size:14px}\n\n  .evidence-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}\n  .evidence-column{border:1px solid var(--line);border-radius:14px;overflow:hidden}\n  .evidence-head{padding:18px 20px;background:var(--soft)}\n  .evidence-head span{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:800}\n  .evidence-head h3{margin:3px 0 0}\n  .evidence-column ul{margin:0;padding:14px 24px 18px 40px}\n  .evidence-column li{margin:8px 0}\n\n  .hero-rec{display:grid;grid-template-columns:1.5fr .8fr;gap:18px;border:2px solid #dfcde3;border-radius:18px;padding:24px;background:linear-gradient(135deg,#fff,#fbf7fc)}\n  .hero-rec-badge{display:inline-block;background:var(--purple);color:#fff;padding:5px 9px;border-radius:999px;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.07em}\n  .hero-rec h3{font-size:24px;margin:10px 0 8px}\n  .hero-rec-copy p{margin:0}\n  .hero-rec-reason{margin-top:14px;padding-top:12px;border-top:1px solid var(--line);font-size:13px;color:#5f5362}\n  .hero-rec-meta{display:grid;gap:10px}\n  .hero-rec-meta div{background:var(--soft);border-radius:10px;padding:12px}\n  .hero-rec-meta span{display:block;font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:800}\n  .hero-rec-meta strong{display:block;margin-top:4px}\n\n  .idea-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}\n  .idea-card{border:1px solid var(--line);border-radius:16px;padding:22px;background:#fff}\n  .idea-topline{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px}\n  .idea-number{font-weight:850;color:#c3b4c6;font-size:13px}\n  .content-type{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--purple)}\n  .funnel-chip{font-size:10px;background:var(--soft-2);padding:4px 7px;border-radius:999px;color:#69596d}\n  .idea-card h3{font-size:20px;margin:0 0 8px}\n  .idea-copy{margin:0;color:#4c414f}\n  .visual-box,.evidence-strip{background:var(--soft);border-radius:10px;padding:12px 14px;margin-top:15px;font-size:13px}\n  .visual-box strong,.evidence-strip strong{display:block;color:var(--purple-dark);margin-bottom:3px}\n  .cta-row{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:14px;padding-top:12px;border-top:1px solid var(--line);font-size:13px}\n  .cta-row span{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.08em}\n  .keyword-row{display:flex;flex-wrap:wrap;gap:6px;margin-top:13px}\n  .keyword-row span{background:var(--purple-light);color:var(--purple-dark);padding:5px 8px;border-radius:999px;font-size:11px}\n\n  .social-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}\n  .social-post{border:1px solid var(--line);border-radius:16px;padding:20px;background:#fff}\n  .social-head{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted)}\n  .platform-dot{width:9px;height:9px;border-radius:50%;background:var(--purple)}\n  .social-post.instagram .platform-dot{background:#b62c7b}\n  .social-post.pinterest .platform-dot{background:#aa1c23}\n  .social-post.facebook .platform-dot{background:#3464a5}\n  .social-post.tiktok .platform-dot{background:#222}\n  .social-post h3{margin:10px 0 8px}\n  .social-body{margin:0;color:#4b404d}\n  .social-brief{margin-top:12px;padding:10px 12px;background:var(--soft);border-radius:9px}\n  .social-brief span{display:block;font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:800}\n  .social-brief p{margin:3px 0 0;font-size:12.5px}\n  .social-extra{margin-top:14px;padding-top:12px;border-top:1px solid var(--line);font-size:12px;color:var(--purple-dark);word-break:break-word}\n\n  .campaign-stack{display:flex;flex-direction:column;gap:16px}\n  .campaign-row{display:grid;grid-template-columns:56px minmax(260px,.8fr) 1.4fr;gap:22px;border:1px solid var(--line);border-radius:16px;padding:24px;background:#fff}\n  .campaign-row.recommended{border:2px solid #d8bddc;background:#fdfafe}\n  .campaign-index{font-size:22px;font-weight:850;color:#c6b8c8}\n  .recommended-label{display:inline-block;font-size:10px;text-transform:uppercase;letter-spacing:.07em;font-weight:800;background:var(--purple);color:white;padding:4px 7px;border-radius:999px;margin-bottom:6px}\n  .campaign-tagline{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:var(--purple)}\n  .campaign-main h3{font-size:22px;margin:6px 0 8px}\n  .campaign-main p{margin:0;color:#514654}\n  .campaign-details{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}\n  .campaign-detail{background:var(--soft);border-radius:10px;padding:11px 12px}\n  .campaign-detail span{display:block;font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:800}\n  .campaign-detail p{margin:4px 0 0;font-size:12.5px}\n\n  .angle-stack{display:flex;flex-direction:column;gap:12px}\n  .angle-row{display:grid;grid-template-columns:.75fr 1fr 40px 1fr;gap:14px;align-items:stretch;border:1px solid var(--line);border-radius:14px;padding:16px}\n  .angle-title{padding:8px}\n  .angle-title span{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:800}\n  .angle-title h3{margin:4px 0 0;font-size:17px}\n  .angle-side{border-radius:10px;padding:14px}\n  .competitor-side{background:#faf8f8}\n  .wayfair-side{background:var(--purple-light)}\n  .side-label{font-size:10px;text-transform:uppercase;letter-spacing:.08em;font-weight:850;color:var(--muted)}\n  .angle-side p{margin:5px 0 0;font-size:13px}\n  .angle-side small{display:block;margin-top:8px;color:var(--muted);font-size:11px}\n  .arrow{display:flex;align-items:center;justify-content:center;font-size:22px;color:#b7aabb}\n\n  .priority-list{display:flex;flex-direction:column}\n  .priority-item{display:grid;grid-template-columns:50px 1fr auto;gap:16px;align-items:center;padding:18px 0;border-bottom:1px solid var(--line)}\n  .priority-item:last-child{border-bottom:none}\n  .priority-rank{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--purple);color:#fff;font-weight:850}\n  .priority-copy h3{margin:0 0 3px;font-size:17px}\n  .priority-copy p{margin:0;color:#5a4f5c;font-size:13.5px}\n  .priority-badges{display:flex;gap:7px;flex-wrap:wrap;justify-content:flex-end}\n  .badge{padding:6px 9px;border-radius:999px;font-size:11px;font-weight:800}\n  .badge.high{background:var(--green-soft);color:var(--green)}\n  .badge.medium{background:var(--amber-soft);color:var(--amber)}\n  .badge.low{background:var(--red-soft);color:var(--red)}\n  .badge.neutral{background:var(--soft-2);color:#625766}\n\n  .table-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:14px}\n  table{width:100%;border-collapse:collapse;min-width:980px}\n  th{background:var(--soft);font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);text-align:left;padding:13px;border-bottom:1px solid var(--line)}\n  td{padding:14px 13px;border-bottom:1px solid var(--line);vertical-align:top;font-size:12.5px}\n  tr:last-child td{border-bottom:none}\n  .table-test{display:block;font-size:10px;text-transform:uppercase;color:var(--purple);font-weight:850;margin-bottom:4px}\n  .variant-b{margin-top:7px}\n\n  .quick-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}\n  .quick-win{border:1px solid var(--line);border-radius:14px;padding:18px;display:grid;grid-template-columns:34px 1fr;gap:12px}\n  .quick-num{color:#c4b5c7;font-weight:850}\n  .quick-win h3{margin:0 0 6px;font-size:16px}\n  .quick-win p{margin:0;color:#564b58;font-size:13px}\n  .owner{display:inline-block;margin-top:10px;font-size:11px;font-weight:800;color:var(--purple-dark)}\n\n  .quality-note{background:#fffaf0;border:1px solid #ead9b5;border-left:5px solid #c48a16;border-radius:14px;padding:22px;margin-top:22px}\n  .quality-note h2{margin:0 0 8px;font-size:18px}\n  .quality-note ul{margin:8px 0 0;padding-left:20px}\n  .empty-state{padding:16px;background:var(--soft);border-radius:10px;color:var(--muted)}\n  .footer{padding:26px 8px 0;color:var(--muted);font-size:12px;text-align:center}\n\n  @media(max-width:900px){\n    .hero{padding:36px}\n    .hero h1{font-size:34px}\n    .context-bar{grid-template-columns:repeat(2,minmax(0,1fr))}\n    .source-status,.brand-grid{grid-template-columns:repeat(2,minmax(0,1fr))}\n    .brand-agent{grid-template-columns:1fr}\n    .strategy-strip{grid-template-columns:1fr 1fr}\n    .idea-grid,.social-grid,.evidence-grid{grid-template-columns:1fr}\n    .hero-rec{grid-template-columns:1fr}\n    .campaign-row{grid-template-columns:44px 1fr}\n    .campaign-details{grid-column:2}\n    .angle-row{grid-template-columns:1fr}\n    .arrow{transform:rotate(90deg)}\n    .quick-grid{grid-template-columns:1fr}\n  }\n\n  @media(max-width:620px){\n    .page{padding:14px 10px 32px}\n    .hero{padding:28px 22px;border-radius:18px}\n    .hero h1{font-size:29px}\n    .hero-sub{font-size:15px}\n    .context-bar,.source-status,.brand-grid{grid-template-columns:1fr}\n    .section{padding:22px 18px;border-radius:16px}\n    .section-title{display:block}\n    .section-title p{margin-top:8px}\n    .exec-grid,.strategy-strip{grid-template-columns:1fr}\n    .exec-block.primary{grid-column:auto}\n    .strategy-item{border-right:none;border-bottom:1px solid var(--line)}\n    .campaign-row{grid-template-columns:1fr}\n    .campaign-details{grid-column:auto;grid-template-columns:1fr}\n    .campaign-index{font-size:14px}\n    .priority-item{grid-template-columns:40px 1fr}\n    .priority-badges{grid-column:2;justify-content:flex-start}\n  }\n\n  @media print{\n    body{background:#fff;color:#000}\n    .page{max-width:none;padding:0}\n    .hero,.section,.quality-note{box-shadow:none}\n    .hero{border-radius:0;-webkit-print-color-adjust:exact;print-color-adjust:exact}\n    .section{break-inside:avoid-page;page-break-inside:avoid;border-color:#bbb}\n    .idea-card,.social-post,.campaign-row,.angle-row,.priority-item,.quick-win,.metric-card,.hero-rec{break-inside:avoid-page;page-break-inside:avoid}\n    .table-wrap{overflow:visible}\n    table{min-width:0;font-size:10px}\n    thead{display:table-header-group}\n    tr{break-inside:avoid-page;page-break-inside:avoid}\n    a{text-decoration:none;color:inherit}\n  }\n</style>\n</head>\n<body>\n<div class=\"page\">\n\n  <header class=\"hero\">\n    <div class=\"hero-kicker\">AI-powered merchandising strategy</div>\n    <h1>Wayfair ${esc(category)} Content Strategy</h1>\n    <p class=\"hero-sub\">${focus ? esc(focus) + ' · ' : ''}A source-grounded plan connecting audience needs, competitive signals, brand voice, content ideas, and measurable tests.</p>\n    <div class=\"context-bar\">${contextHtml}</div>\n  </header>\n\n  <section class=\"section\">\n    <div class=\"section-title\">\n      <div>\n        <div class=\"section-kicker\">Source status</div>\n        <h2>What the agent actually used</h2>\n      </div>\n      <p>This makes the report auditable and shows whether the recommendations were grounded in both uploaded source reports.</p>\n    </div>\n    ${sourceStatusHtml}\n  </section>\n\n  ${warningsHtml}\n\n  <section class=\"section\">\n    <div class=\"section-title\">\n      <div>\n        <div class=\"section-kicker\">Executive recommendation</div>\n        <h2>What Wayfair should do next</h2>\n      </div>\n    </div>\n    ${execHtml}\n    <div class=\"metrics\">${metricsHtml}</div>\n  </section>\n\n  <section class=\"section\">\n    <div class=\"section-title\">\n      <div>\n        <div class=\"section-kicker\">Brand voice</div>\n        <h2>How the content should sound and feel</h2>\n      </div>\n      <p>A consistent voice helps the AI agent produce content that feels commercial without sounding robotic or overly promotional.</p>\n    </div>\n    ${brandHtml}\n  </section>\n\n  <section class=\"section\">\n    <div class=\"section-title\">\n      <div>\n        <div class=\"section-kicker\">Audience & message</div>\n        <h2>Who the content is for — and what it should say</h2>\n      </div>\n    </div>\n    <div class=\"strategy-strip\">${audienceHtml}</div>\n  </section>\n\n  <section class=\"section\">\n    <div class=\"section-title\">\n      <div>\n        <div class=\"section-kicker\">Evidence base</div>\n        <h2>What the source reports actually say</h2>\n      </div>\n      <p>Market evidence and competitor evidence stay separate so the logic remains traceable.</p>\n    </div>\n    <div class=\"evidence-grid\">\n      ${dataColumn('Market analysis insights', c.data_foundation?.p2_insights, 'Project 2')}\n      ${dataColumn('Competitor analysis insights', c.data_foundation?.p3_insights, 'Project 3')}\n    </div>\n  </section>\n\n  <section class=\"section\">\n    <div class=\"section-title\">\n      <div>\n        <div class=\"section-kicker\">Hero recommendation</div>\n        <h2>The content move to lead with</h2>\n      </div>\n    </div>\n    ${heroHtml}\n  </section>\n\n  <section class=\"section\">\n    <div class=\"section-title\">\n      <div>\n        <div class=\"section-kicker\">Content opportunities</div>\n        <h2>Ideas built for the selected audience and goal</h2>\n      </div>\n      <p>Each idea includes its funnel stage, source connection, CTA, visual direction, and search language where available.</p>\n    </div>\n    <div class=\"idea-grid\">${ideasHtml || '<div class=\"empty-state\">No content ideas returned.</div>'}</div>\n  </section>\n\n  <section class=\"section\">\n    <div class=\"section-title\">\n      <div>\n        <div class=\"section-kicker\">Content funnel</div>\n        <h2>How content supports the customer journey</h2>\n      </div>\n    </div>\n    <div class=\"table-wrap\">\n      <table>\n        <thead>\n          <tr>\n            <th>Stage</th>\n            <th>Objective</th>\n            <th>Content</th>\n            <th>Message</th>\n            <th>CTA</th>\n            <th>KPI</th>\n          </tr>\n        </thead>\n        <tbody>\n          ${funnelRows || '<tr><td colspan=\"6\">No funnel plan returned.</td></tr>'}\n        </tbody>\n      </table>\n    </div>\n  </section>\n\n  <section class=\"section\">\n    <div class=\"section-title\">\n      <div>\n        <div class=\"section-kicker\">Ready-to-use social</div>\n        <h2>Platform-native content briefs</h2>\n      </div>\n    </div>\n    <div class=\"social-grid\">${socialHtml || '<div class=\"empty-state\">No social content returned.</div>'}</div>\n  </section>\n\n  <section class=\"section\">\n    <div class=\"section-title\">\n      <div>\n        <div class=\"section-kicker\">Campaign concepts</div>\n        <h2>Three bigger ideas with clear execution logic</h2>\n      </div>\n    </div>\n    <div class=\"campaign-stack\">${campaignsHtml || '<div class=\"empty-state\">No campaign concepts returned.</div>'}</div>\n  </section>\n\n  <section class=\"section\">\n    <div class=\"section-title\">\n      <div>\n        <div class=\"section-kicker\">Competitive opportunity</div>\n        <h2>Turn competitor gaps into Wayfair content moves</h2>\n      </div>\n    </div>\n    <div class=\"angle-stack\">${anglesHtml || '<div class=\"empty-state\">No competitive angles returned.</div>'}</div>\n  </section>\n\n  <section class=\"section\">\n    <div class=\"section-title\">\n      <div>\n        <div class=\"section-kicker\">Priority roadmap</div>\n        <h2>What to execute first</h2>\n      </div>\n    </div>\n    <div class=\"priority-list\">${prioritiesHtml || '<div class=\"empty-state\">No priorities returned.</div>'}</div>\n  </section>\n\n  <section class=\"section\">\n    <div class=\"section-title\">\n      <div>\n        <div class=\"section-kicker\">Measurement plan</div>\n        <h2>A/B tests that connect creative decisions to learning</h2>\n      </div>\n      <p>Targets remain relative when the source reports do not provide a trustworthy benchmark.</p>\n    </div>\n    <div class=\"table-wrap\">\n      <table>\n        <thead>\n          <tr>\n            <th>Content / campaign</th>\n            <th>Primary KPI</th>\n            <th>Success target</th>\n            <th>Hypothesis</th>\n            <th>Variants</th>\n            <th>Optimization action</th>\n          </tr>\n        </thead>\n        <tbody>\n          ${performanceRows || '<tr><td colspan=\"6\">No performance tests returned.</td></tr>'}\n        </tbody>\n      </table>\n    </div>\n  </section>\n\n  <section class=\"section\">\n    <div class=\"section-title\">\n      <div>\n        <div class=\"section-kicker\">Quick wins</div>\n        <h2>Low-friction actions the team can start now</h2>\n      </div>\n    </div>\n    <div class=\"quick-grid\">${quickWinsHtml || '<div class=\"empty-state\">No quick wins returned.</div>'}</div>\n  </section>\n\n  <div class=\"footer\">\n    Generated ${esc(today)} · Source inputs: Project 2 Market Analysis + Project 3 Competitor Analysis\n  </div>\n\n</div>\n</body>\n</html>`;\n\nreturn [{\n  json: {\n    html,\n    category,\n    focus,\n    quality: q,\n    strategy_context: {\n      target_audience: data.target_audience,\n      campaign_goal: data.campaign_goal,\n      season: data.season,\n      primary_channel: data.primary_channel,\n      competitor_focus: data.competitor_focus,\n      product_focus: data.product_focus,\n      kpi_focus: data.kpi_focus\n    }\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1008,
+        -64
+      ],
+      "id": "c0bb8d43-f6aa-4c09-949d-4c2e78bdfc87",
+      "name": "Build Enhanced HTML"
+    },
+    {
+      "parameters": {
+        "jsCode": "const item = $input.first().json;\nconst html = item.html || '';\nconst category = item.category || 'Area Rugs';\nconst ts = new Date().toISOString().split('T')[0];\nconst safeCategory = String(category).replace(/[^a-z0-9]+/gi, '_').replace(/^_+|_+$/g, '');\nconst fileName = `Wayfair_${safeCategory}_Enhanced_Content_Strategy_${ts}.html`;\n\nreturn [{\n  json: {\n    ...item,\n    fileName\n  },\n  binary: {\n    data: {\n      data: Buffer.from(html, 'utf8').toString('base64'),\n      mimeType: 'text/html',\n      fileName\n    }\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1248,
+        -64
+      ],
+      "id": "274513fd-db10-413b-bc2c-07852aa7022f",
+      "name": "Prepare Download"
+    },
+    {
+      "parameters": {
+        "html": "{{ $json.html }}"
+      },
+      "type": "n8n-nodes-base.html",
+      "typeVersion": 1.2,
+      "position": [
+        1488,
+        -64
+      ],
+      "id": "e8b898be-1a25-4ce8-8c05-33e204e4aac4",
+      "name": "Preview"
+    },
+    {
+      "parameters": {
+        "model": "openrouter/free",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        272,
+        160
+      ],
+      "id": "93cb7fe4-7f23-46ae-88e7-755787843897",
+      "name": "OpenRouter Chat Model"
+    },
+    {
+      "parameters": {
+        "content": "## **STAGE 1: INPUT STAGE**\n**CONTENT STRATEGY FORM**\n- KEY PERFORMANCE INDICATORS TO ANALYZE FOR CONTENT STRATEGY\n- SPECIFIC RUG CATEGORY\n- SPECIFIC TARGET MARKET\n- ETC",
+        "height": 704,
+        "width": 528,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -320,
+        -336
+      ],
+      "typeVersion": 1,
+      "id": "e8439adc-0110-4a94-b5d1-e5e08453f3fe",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "content": "## **STAGE 2: AI EXTRACTION AGENT**\n- Extracts the insights from the Market Research and Competitive Analysis\n- Makes the content for the HTML Dashboard",
+        "height": 704,
+        "width": 320
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        224,
+        -336
+      ],
+      "typeVersion": 1,
+      "id": "15f66963-c288-4c86-8140-eb92b40ea785",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "content": "## STAGE 3: DASHBOARD CREATION\\\n- THIS SHOWS EFFECTIVE WAYS TO TEST DIFFERENT CONTENT STRATEGIES TO FILL COMPETITVE GAPS\n- INCLUDE QUICK ACTION ITEMS, A/B TESTING GENERATED HYPOTHESES \n- HOW THESE KEY PERFORMANCE INDICATORS CAN PLAY AN INTEGRAL ROLE IN BENCHMARKING NEW DESIGN IDEAS AND MAKE A LUCRATIVE MARKETING STRATEGY",
+        "height": 704,
+        "width": 1184,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        560,
+        -336
+      ],
+      "typeVersion": 1,
+      "id": "29b19893-765b-4ad3-a865-2fc5d4df2217",
+      "name": "Sticky Note2"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Upload Form": {
+      "main": [
+        [
+          {
+            "node": "Extract & Normalize Inputs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract & Normalize Inputs": {
+      "main": [
+        [
+          {
+            "node": "AI Content Strategy",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Content Strategy": {
+      "main": [
+        [
+          {
+            "node": "Parse AI JSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse AI JSON": {
+      "main": [
+        [
+          {
+            "node": "Reshape & Validate Strategy",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reshape & Validate Strategy": {
+      "main": [
+        [
+          {
+            "node": "Build Enhanced HTML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Enhanced HTML": {
+      "main": [
+        [
+          {
+            "node": "Prepare Download",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Download": {
+      "main": [
+        [
+          {
+            "node": "Preview",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Content Strategy",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "nodeGroups": [],
+  "id": "emxlGVUj9WWKlWad",
+  "tags": []
+}
