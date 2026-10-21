@@ -1,0 +1,958 @@
+{
+  "name": "P3 - Competition Agent",
+  "nodes": [
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        -288,
+        16
+      ],
+      "id": "9ab79ae8-aacf-48ed-a4e5-e1e4fc3ab740",
+      "name": "When chat message received"
+    },
+    {
+      "parameters": {
+        "jsCode": "// INPUT PARSER - Project 3 Competitor Monitoring\n// Extracts category + optional focus keyword from chat input.\n// Products for each retailer are pulled by category from the program's data server.\n\nconst input = $input.first().json.chatInput || '';\n\nconst categories = [\n  { key: 'area_rug',       displayName: 'Area Rug',       patterns: ['area rug', 'area rugs'] },\n  { key: 'outdoor_rug',    displayName: 'Outdoor Rug',    patterns: ['outdoor rug', 'outdoor rugs', 'patio rug', 'patio rugs'] },\n  { key: 'hallway_runner', displayName: 'Hallway Runner', patterns: ['hallway runner', 'runner rug', 'hall runner', 'runners', 'hallway runners'] },\n  { key: 'shag_rug',       displayName: 'Shag Rug',       patterns: ['shag rug', 'shag rugs', 'shaggy rug', 'shaggy rugs'] },\n];\n\nconst lowerInput = input.toLowerCase();\nlet detectedCategory = null;\nfor (const cat of categories) {\n  for (const pattern of cat.patterns) {\n    if (lowerInput.includes(pattern)) {\n      detectedCategory = cat;\n      break;\n    }\n  }\n  if (detectedCategory) break;\n}\n\n// Optional focus keyword (e.g. \"focus: washable\")\nconst focusMatch = input.match(/focus\\s*:\\s*([^\\n]+)/i);\nconst focus = focusMatch ? focusMatch[1].trim() : '';\n\nconst hasCategory = !!detectedCategory;\nconst categoryKey = detectedCategory ? detectedCategory.key : null;\nconst categoryDisplayName = detectedCategory ? detectedCategory.displayName : null;\n\nreturn [{\n  json: {\n    category: categoryKey,\n    categoryKey,\n    categoryDisplayName,\n    focus,\n    hasValidInput: hasCategory,\n    errorReason: hasCategory ? null : 'no_category',\n    originalInput: input,\n    parsedAt: new Date().toISOString(),\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -16,
+        16
+      ],
+      "id": "5068a062-6534-41cb-a215-849d05b800cb",
+      "name": "Input Parser"
+    },
+    {
+      "parameters": {
+        "content": "## STAGE 1: INPUT PARSER\nThis will parse the data and detect the **category** and **focus** if put in",
+        "height": 304,
+        "width": 464,
+        "color": 2
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -336,
+        -96
+      ],
+      "typeVersion": 1,
+      "id": "5c210e32-c475-4c4c-bbbb-4fbc165742fe",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "content": "## STAGE 2: WAYFAIR PRODUCTS\nFetches up to 10 products from **Wayfair Products**",
+        "height": 272,
+        "width": 656,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        208,
+        -368
+      ],
+      "typeVersion": 1,
+      "id": "a1fd2f97-abb3-452e-a2f0-7b3f03db6a7d",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "content": "## STAGE 3: IKEA PRODUCTS\nFetches the top 10 **IKEA Products**",
+        "height": 272,
+        "width": 660,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        208,
+        -80
+      ],
+      "typeVersion": 1,
+      "id": "78893676-975c-45c9-a402-d264e16cada3",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "content": "## STAGE 4: AMAZON PRODUCTS\n\nFetches the top 10 **Amazon Products**",
+        "height": 288,
+        "width": 656,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        208,
+        224
+      ],
+      "typeVersion": 1,
+      "id": "dd64ea35-91fe-4775-bf75-098fc1dc023d",
+      "name": "Sticky Note3"
+    },
+    {
+      "parameters": {
+        "numberInputs": 3
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        1216,
+        -16
+      ],
+      "id": "a12146fd-4eb2-48d3-8ae9-3e0d365d5254",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "jsCode": "// SCOPE GENERATOR - No AI, just JavaScript\n// Generates Section 2: Scope of Research\n// Retailers: Wayfair (baseline), IKEA, Amazon\n\nconst wayfairData = $('Reshape Wayfair Response').first().json || {};\nconst ikeaData = $('Reshape IKEA Response').first().json || {};\n\nlet amazonData = {};\ntry {\n  amazonData = $('Reshape Amazon Response').first().json || {};\n} catch (e) {\n  amazonData = {};\n}\n\nconst inputData = $('Input Parser').first().json || {};\n\nconst category = inputData.categoryDisplayName || 'Rugs';\n\n// Product counts\nconst wayfairProductCount =\n  wayfairData.wayfair_products?.length ||\n  wayfairData.wayfairProducts?.length ||\n  wayfairData.totalProducts ||\n  0;\n\nconst ikeaProductCount =\n  ikeaData.ikea_products?.length ||\n  ikeaData.ikeaProducts?.length ||\n  ikeaData.totalProducts ||\n  0;\n\nconst amazonProductCount =\n  amazonData.amazon_products?.length ||\n  amazonData.amazonProducts?.length ||\n  amazonData.totalProducts ||\n  0;\n\nconst scopeHtml = `\n<section class=\"scope-section\">\n  <h2>Scope of Research</h2>\n\n  <div class=\"scope-grid\">\n\n    <div class=\"scope-card\">\n      <h4>Category Analyzed</h4>\n      <p class=\"scope-value\">${category}</p>\n    </div>\n\n    <div class=\"scope-card\">\n      <h4>Competitors Reviewed</h4>\n      <ul>\n        <li><strong>IKEA</strong> - ${ikeaProductCount} products analyzed</li>\n        <li><strong>Amazon</strong> - ${amazonProductCount} products analyzed</li>\n        <li><strong>Wayfair</strong> - ${wayfairProductCount} products (baseline)</li>\n      </ul>\n    </div>\n\n    <div class=\"scope-card\">\n      <h4>Data Sources</h4>\n      <ul>\n        <li>Product listings & pricing</li>\n        <li>Customer reviews & ratings</li>\n        <li>Product features & specifications</li>\n      </ul>\n    </div>\n\n    <div class=\"scope-card\">\n      <h4>Report Generated</h4>\n      <p class=\"scope-value\">\n        ${new Date().toLocaleDateString('en-US', {\n          year: 'numeric',\n          month: 'long',\n          day: 'numeric'\n        })}\n      </p>\n    </div>\n\n  </div>\n</section>\n`;\n\nreturn [{\n  json: {\n    section: 'scope',\n    html: scopeHtml,\n    metadata: {\n      category,\n      ikeaProductCount,\n      amazonProductCount,\n      wayfairProductCount,\n      totalProductsAnalyzed:\n        ikeaProductCount +\n        amazonProductCount +\n        wayfairProductCount,\n      generatedAt: new Date().toISOString()\n    }\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1392,
+        0
+      ],
+      "id": "21d973a3-2f05-4ca3-91a6-9d9680392126",
+      "name": "Scope Generator"
+    },
+    {
+      "parameters": {
+        "amount": 15
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        1584,
+        0
+      ],
+      "id": "4726acd4-272f-434d-9c92-a7a7fb6bfbb6",
+      "name": "Wait"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=CATEGORY: {{ $('Input Parser').first().json.categoryDisplayName }}\n\nWAYFAIR PRODUCTS:\n{{ JSON.stringify($('Reshape Wayfair Response').first().json.wayfair_products?.slice(0, 10), null, 2) }}\n\nIKEA COMPETITOR DATA:\n{{ JSON.stringify($('Reshape IKEA Response').first().json.ikea_products?.slice(0, 10), null, 2) }}\n\nAMAZON COMPETITOR DATA:\n{{ JSON.stringify($('Reshape Amazon Response').first().json.amazonProducts?.slice(0, 10), null, 2) }}",
+        "options": {
+          "systemMessage": "You are a senior competitive analyst writing an Executive Summary for Wayfair's strategy team.\n\nTASK: Write a compelling Executive Summary comparing Wayfair vs Amazon and IKEA in this rug category.\n\nREQUIREMENTS:\n\n1. Lead with the single most important competitive insight.\n2. Include 5-6 key bullet points covering:\n\n   * Price positioning (Wayfair vs Amazon vs IKEA)\n   * Product assortment differences across all three retailers\n   * Rating and review comparison\n   * Key competitive advantage for Wayfair\n   * IKEA-specific opportunities or threats\n   * Main strategic opportunity for Wayfair\n3. Add a \"Strategic Implications\" paragraph of 2-3 sentences.\n4. Base all findings only on the product data provided. Do not invent missing prices, ratings, reviews, features, or assortment details.\n5. Clearly distinguish observed data patterns from strategic interpretation.\n\nOUTPUT FORMAT: HTML only, no markdown.\n\n<section class=\"executive-summary\">\n  <h2>Executive Summary</h2>\n\n  <div class=\"summary-hero\">\n    <div class=\"key-insight\">\n      <span class=\"label\">Key Competitive Insight</span>\n      <p>[Single most important finding about Wayfair vs Amazon vs IKEA]</p>\n    </div>\n  </div>\n\n  <div class=\"summary-points\">\n    <h3>Key Findings</h3>\n    <ul>\n      <li><strong>Price Positioning:</strong> [Insight comparing Wayfair, Amazon, and IKEA]</li>\n      <li><strong>Product Assortment:</strong> [Insight comparing assortment across all three retailers]</li>\n      <li><strong>Ratings & Reviews:</strong> [Insight based on available customer rating and review data]</li>\n      <li><strong>Wayfair Competitive Advantage:</strong> [Wayfair's strongest advantage based on the data]</li>\n      <li><strong>IKEA Opportunity or Threat:</strong> [Key competitive implication from IKEA's positioning]</li>\n      <li><strong>Strategic Opportunity:</strong> [Most important opportunity for Wayfair]</li>\n    </ul>\n  </div>\n\n  <div class=\"strategic-implications\">\n    <h3>Strategic Implications</h3>\n    <p>[Explain what these findings mean for Wayfair's merchandising, pricing, assortment, or positioning strategy in 2-3 sentences.]</p>\n  </div>\n</section>\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        1760,
+        0
+      ],
+      "id": "eaf16f48-4839-4e7e-8473-2c924efef878",
+      "name": "Executive Summary Generator",
+      "retryOnFail": false,
+      "maxTries": 4,
+      "waitBetweenTries": 3000
+    },
+    {
+      "parameters": {
+        "amount": 30
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        2048,
+        0
+      ],
+      "id": "b019f1fd-7c17-45c9-90e6-e80538979564",
+      "name": "Wait After Executive"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=CATEGORY: {{ $('Input Parser').first().json.categoryDisplayName }}\n\nAMAZON PRODUCTS:\n{{ JSON.stringify($('Reshape Amazon Response').first().json.amazonProducts?.slice(0, 10), null, 2) }}\n\nIKEA PRODUCTS:\n{{ JSON.stringify($('Reshape IKEA Response').first().json.ikeaProducts?.slice(0, 10), null, 2) }}",
+        "options": {
+          "systemMessage": "You are a marketplace analyst. Analyze Amazon and IKEA competitor products.\n\nTASK: Create a Competitor Analysis section covering BOTH Amazon AND IKEA with clickable product links.\n\nIMPORTANT: When listing products in tables, wrap product names in anchor tags using their URL: <a href=\"[product_url]\">[Product Name]</a>\n\nOnly use information that is present in the supplied product data. Do not invent prices, ratings, review counts, features, sizes, colors, brands, or URLs.\n\nINCLUDE:\n\n1. Amazon Analysis:\n\n   * Product count\n   * Price range\n   * Average rating, if rating data is available\n   * Top 3 performers WITH clickable links to their URLs\n   * Common product features or characteristics found in the data\n\n2. IKEA Analysis:\n\n   * Product count\n   * Price range\n   * Average rating, if rating data is available\n   * Top 3 performers WITH clickable links to their URLs\n   * Common product features, styles, or characteristics found in the data\n\n3. Cross-Competitor Comparison:\n\n   * Pricing differences between Amazon and IKEA\n   * Product assortment differences\n   * Rating/review differences, where data is available\n   * Key differentiators\n   * Differences in apparent customer positioning based only on the supplied product data\n\nOUTPUT FORMAT: HTML only, no markdown.\n\n<section class=\"competitor-analysis\">\n  <h2>Competitor Analysis</h2>\n\n  <div class=\"amazon-section\">\n    <h3>Amazon Overview</h3>\n\n```\n<div class=\"stats-grid\">\n  <div class=\"stat-card\">\n    <span class=\"stat-value\">[Count]</span>\n    <span class=\"stat-label\">Products Analyzed</span>\n  </div>\n\n  <div class=\"stat-card\">\n    <span class=\"stat-value\">[Min] - [Max]</span>\n    <span class=\"stat-label\">Price Range</span>\n  </div>\n\n  <div class=\"stat-card\">\n    <span class=\"stat-value\">[Avg]/5 or N/A</span>\n    <span class=\"stat-label\">Avg Rating</span>\n  </div>\n</div>\n\n<div class=\"top-performers\">\n  <h4>Top Amazon Products</h4>\n\n  <table class=\"data-table\">\n    <thead>\n      <tr>\n        <th>Product</th>\n        <th>Price</th>\n        <th>Rating</th>\n      </tr>\n    </thead>\n\n    <tbody>\n      <tr>\n        <td><a href=\"[full_amazon_url]\">[Product Name - shortened if needed]</a></td>\n        <td>[Price]</td>\n        <td>[Rating] ([Review Count])</td>\n      </tr>\n\n      <tr>\n        <td><a href=\"[full_amazon_url]\">[Product Name]</a></td>\n        <td>[Price]</td>\n        <td>[Rating] ([Review Count])</td>\n      </tr>\n\n      <tr>\n        <td><a href=\"[full_amazon_url]\">[Product Name]</a></td>\n        <td>[Price]</td>\n        <td>[Rating] ([Review Count])</td>\n      </tr>\n    </tbody>\n  </table>\n</div>\n\n<div class=\"common-features\">\n  <h4>Common Features</h4>\n  <ul>\n    <li>[Feature or characteristic 1]</li>\n    <li>[Feature or characteristic 2]</li>\n    <li>[Feature or characteristic 3]</li>\n    <li>[Feature or characteristic 4]</li>\n  </ul>\n</div>\n```\n\n  </div>\n\n  <div class=\"ikea-section\">\n    <h3>IKEA Overview</h3>\n\n```\n<div class=\"stats-grid\">\n  <div class=\"stat-card\">\n    <span class=\"stat-value\">[Count]</span>\n    <span class=\"stat-label\">Products Analyzed</span>\n  </div>\n\n  <div class=\"stat-card\">\n    <span class=\"stat-value\">[Min] - [Max]</span>\n    <span class=\"stat-label\">Price Range</span>\n  </div>\n\n  <div class=\"stat-card\">\n    <span class=\"stat-value\">[Avg]/5 or N/A</span>\n    <span class=\"stat-label\">Avg Rating</span>\n  </div>\n</div>\n\n<div class=\"top-performers\">\n  <h4>Top IKEA Products</h4>\n\n  <table class=\"data-table\">\n    <thead>\n      <tr>\n        <th>Product</th>\n        <th>Price</th>\n        <th>Rating</th>\n      </tr>\n    </thead>\n\n    <tbody>\n      <tr>\n        <td><a href=\"[full_ikea_url]\">[Product Name - shortened if needed]</a></td>\n        <td>[Price]</td>\n        <td>[Rating] ([Review Count])</td>\n      </tr>\n\n      <tr>\n        <td><a href=\"[full_ikea_url]\">[Product Name]</a></td>\n        <td>[Price]</td>\n        <td>[Rating] ([Review Count])</td>\n      </tr>\n\n      <tr>\n        <td><a href=\"[full_ikea_url]\">[Product Name]</a></td>\n        <td>[Price]</td>\n        <td>[Rating] ([Review Count])</td>\n      </tr>\n    </tbody>\n  </table>\n</div>\n\n<div class=\"common-features\">\n  <h4>Common Features & Styles</h4>\n  <ul>\n    <li>[Feature, material, or style 1]</li>\n    <li>[Feature, material, or style 2]</li>\n    <li>[Feature, material, or style 3]</li>\n    <li>[Feature, material, or style 4]</li>\n  </ul>\n</div>\n```\n\n  </div>\n\n  <div class=\"cross-comparison\">\n    <h3>Cross-Competitor Insights</h3>\n    <ul>\n      <li><strong>Pricing:</strong> [Compare Amazon and IKEA pricing using the supplied data]</li>\n      <li><strong>Assortment:</strong> [Compare product selection and observed styles]</li>\n      <li><strong>Ratings & Reviews:</strong> [Compare customer feedback where available]</li>\n      <li><strong>Key Differentiators:</strong> [Explain what distinguishes Amazon from IKEA based on the data]</li>\n      <li><strong>Customer Positioning:</strong> [Describe apparent positioning supported by the product data]</li>\n    </ul>\n  </div>\n</section>\n\nCRITICAL:\n\n* Extract actual URLs from the product data and use them in href attributes.\n* Use full product URLs for Amazon and IKEA.\n* If a URL is not available, show the product name without a link.\n* If rating or review data is unavailable, display \"N/A\" rather than inventing a value.\n* Calculate price ranges and average ratings only from valid numeric values.\n* Truncate long product names to approximately 50 characters for readability.\n* Base all conclusions only on the products supplied in this workflow run.\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        2224,
+        0
+      ],
+      "id": "6ff3cbbb-79ed-4b94-91c5-7ad3135e516b",
+      "name": "Amazon Analysis Generator"
+    },
+    {
+      "parameters": {
+        "model": "openrouter/free",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        2224,
+        176
+      ],
+      "id": "43797c87-da69-42e1-8f43-0405320b859f",
+      "name": "OpenRouter Chat Model"
+    },
+    {
+      "parameters": {
+        "amount": 25
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        2528,
+        0
+      ],
+      "id": "364d526c-a399-4682-91a3-45ce89782a0e",
+      "name": "Wait After Amazon"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=CATEGORY: {{ $('Input Parser').first().json.categoryDisplayName }}\n\nWAYFAIR PRODUCTS:\n{{ JSON.stringify($('Reshape Wayfair Response').first().json.wayfair_products?.slice(0, 10), null, 2) }}\n\nAMAZON PRODUCTS:\n{{ JSON.stringify($('Reshape Amazon Response').first().json.amazonProducts?.slice(0, 10), null, 2) }}\n\nIKEA PRODUCTS:\n{{ JSON.stringify($('Reshape IKEA Response').first().json.ikeaProducts?.slice(0, 10), null, 2) }}",
+        "options": {
+          "systemMessage": "You are a competitive intelligence analyst. Create a side-by-side comparison of Wayfair vs Amazon vs IKEA.\n\nTASK: Create a comprehensive three-way Competitor Comparison table with clear winner indicators.\n\nCOMPARE THESE ATTRIBUTES:\n\n1. Price Positioning (average, minimum, maximum for each retailer)\n2. Product Variety / Count\n3. Rating Distribution\n4. Feature Highlights\n5. Size / Color Options\n6. Shipping / Delivery\n\nIMPORTANT DATA RULES:\n\n* Base all calculations and conclusions only on the supplied product data.\n* Do not invent missing ratings, reviews, brands, features, sizes, colors, shipping details, or delivery information.\n* If a field is unavailable for a retailer, display \"N/A\".\n* Calculate averages only from valid numeric values.\n* If there is not enough data to determine a winner for an attribute, use \"Tie\" or \"Insufficient Data\".\n\nOUTPUT FORMAT: HTML only, no markdown.\n\n<section class=\"competitor-comparison\">\n  <h2>Side-by-Side Comparison</h2>\n\n  <table class=\"comparison-table\">\n    <thead>\n      <tr>\n        <th>Attribute</th>\n        <th>Wayfair</th>\n        <th>Amazon</th>\n        <th>IKEA</th>\n        <th>Winner</th>\n      </tr>\n    </thead>\n\n```\n<tbody>\n\n  <tr>\n    <td><strong>Price Positioning</strong></td>\n\n    <td>\n      Avg: $[X]<br>\n      Min: $[X]<br>\n      Max: $[X]\n    </td>\n\n    <td>\n      Avg: $[X]<br>\n      Min: $[X]<br>\n      Max: $[X]\n    </td>\n\n    <td>\n      Avg: $[X]<br>\n      Min: $[X]<br>\n      Max: $[X]\n    </td>\n\n    <td class=\"winner\">\n      <span class=\"winner-badge [winner-class]\">[Winner Name]</span>\n    </td>\n  </tr>\n\n  <tr>\n    <td><strong>Product Variety</strong></td>\n\n    <td>\n      [X] products<br>\n      Brands: [list or N/A]<br>\n      Styles: [list or N/A]\n    </td>\n\n    <td>\n      [X] products<br>\n      Brands: [list or N/A]<br>\n      Styles: [list or N/A]\n    </td>\n\n    <td>\n      [X] products<br>\n      Brands: [list or N/A]<br>\n      Styles: [list or N/A]\n    </td>\n\n    <td class=\"winner\">\n      <span class=\"winner-badge [winner-class]\">[Winner Name or Tie]</span>\n    </td>\n  </tr>\n\n  <tr>\n    <td><strong>Avg Rating</strong></td>\n\n    <td>\n      [X] / 5 stars<br>\n      ([X] - [X] reviews or N/A)\n    </td>\n\n    <td>\n      [X] / 5 stars<br>\n      ([X] - [X] reviews or N/A)\n    </td>\n\n    <td>\n      [X] / 5 stars<br>\n      ([X] - [X] reviews or N/A)\n    </td>\n\n    <td class=\"winner\">\n      <span class=\"winner-badge [winner-class]\">[Winner Name, Tie, or Insufficient Data]</span>\n    </td>\n  </tr>\n\n  <tr>\n    <td><strong>Key Features</strong></td>\n\n    <td>\n      <ul>\n        <li>[Feature 1]</li>\n        <li>[Feature 2]</li>\n        <li>[Feature 3]</li>\n      </ul>\n    </td>\n\n    <td>\n      <ul>\n        <li>[Feature 1]</li>\n        <li>[Feature 2]</li>\n        <li>[Feature 3]</li>\n      </ul>\n    </td>\n\n    <td>\n      <ul>\n        <li>[Feature 1]</li>\n        <li>[Feature 2]</li>\n        <li>[Feature 3]</li>\n      </ul>\n    </td>\n\n    <td class=\"winner\">\n      <span class=\"winner-badge [winner-class]\">[Winner Name or Tie]</span>\n    </td>\n  </tr>\n\n  <tr>\n    <td><strong>Size Options</strong></td>\n\n    <td>[Description of size range or N/A]</td>\n    <td>[Description of size range or N/A]</td>\n    <td>[Description of size range or N/A]</td>\n\n    <td class=\"winner\">\n      <span class=\"winner-badge [winner-class]\">[Winner Name, Tie, or Insufficient Data]</span>\n    </td>\n  </tr>\n\n  <tr>\n    <td><strong>Shipping</strong></td>\n\n    <td>[Shipping information or N/A]</td>\n    <td>[Shipping information or N/A]</td>\n    <td>[Shipping information or N/A]</td>\n\n    <td class=\"winner\">\n      <span class=\"winner-badge [winner-class]\">[Winner Name, Tie, or Insufficient Data]</span>\n    </td>\n  </tr>\n\n</tbody>\n```\n\n  </table>\n\n  <div class=\"comparison-insights\">\n    <h3>Key Takeaways</h3>\n\n```\n<ul>\n  <li><strong>Price Leader:</strong> [Who has the strongest price positioning based on the supplied data and why]</li>\n  <li><strong>Variety & Selection:</strong> [Compare assortment across Wayfair, Amazon, and IKEA]</li>\n  <li><strong>Customer Confidence:</strong> [Rating and review insights based on available data]</li>\n  <li><strong>Practical Features:</strong> [Compare observed product features]</li>\n  <li><strong>Shipping Convenience:</strong> [Compare only if shipping data is available; otherwise state that the supplied dataset does not support a comparison]</li>\n  <li><strong>Overall:</strong> [Summarize where each retailer appears strongest based only on the supplied data]</li>\n</ul>\n```\n\n  </div>\n</section>\n\n<style>\n.winner-badge {\n  display: inline-block;\n  padding: 4px 12px;\n  border-radius: 20px;\n  font-weight: 600;\n  font-size: 0.85rem;\n}\n\n.winner-wayfair {\n  background: #d1fae5;\n  color: #065f46;\n}\n\n.winner-amazon {\n  background: #fef3c7;\n  color: #92400e;\n}\n\n.winner-ikea {\n  background: #dbeafe;\n  color: #1e40af;\n}\n\n.winner-tie {\n  background: #f3f4f6;\n  color: #374151;\n}\n\n.winner-insufficient {\n  background: #f3f4f6;\n  color: #6b7280;\n}\n</style>\n\nWINNER CLASS RULES:\n\n* If Wayfair wins: use class=\"winner-wayfair\"\n* If Amazon wins: use class=\"winner-amazon\"\n* If IKEA wins: use class=\"winner-ikea\"\n* If Tie: use class=\"winner-tie\"\n* If there is insufficient data: use class=\"winner-insufficient\"\n\nIMPORTANT:\n\n* Calculate actual averages from the supplied product data.\n* Compare only the products included in this workflow run.\n* Be objective and select winners based on available data.\n* Use \"Tie\" when competitors are reasonably comparable.\n* Use \"Insufficient Data\" when the dataset does not support a reliable comparison.\n* Include the inline style block at the end for winner badges.\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        2672,
+        0
+      ],
+      "id": "463d8df3-49a7-435d-82d7-af3293c8155e",
+      "name": "Comparison Generator"
+    },
+    {
+      "parameters": {
+        "amount": 25
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        2992,
+        0
+      ],
+      "id": "d04f902f-566f-4363-ae9c-b691f407a545",
+      "name": "Wait After Comparison"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=CATEGORY: {{ $('Input Parser').first().json.categoryDisplayName }}\n\nWAYFAIR PRODUCTS (prices):\n{{ JSON.stringify(\n  $('Reshape Wayfair Response').first().json.wayfair_products\n    ?.map(p => ({\n      title: p.title,\n      price: p.price,\n      list_price: p.list_price,\n      discount: p.discount_percent\n    }))\n    .slice(0, 10),\n  null,\n  2\n) }}\n\nAMAZON PRODUCTS (prices):\n{{ JSON.stringify(\n  $('Reshape Amazon Response').first().json.amazonProducts\n    ?.map(p => ({\n      name: p.name,\n      price: p.price\n    }))\n    .slice(0, 10),\n  null,\n  2\n) }}\n\nIKEA PRODUCTS (prices):\n{{ JSON.stringify(\n  $('Reshape IKEA Response').first().json.ikeaProducts\n    ?.map(p => ({\n      name: p.name,\n      price: p.price\n    }))\n    .slice(0, 10),\n  null,\n  2\n) }}",
+        "options": {
+          "systemMessage": "You are a pricing strategist. Analyze pricing across Wayfair, Amazon, and IKEA.\n\nTASK: Create Pricing Insights & Whitespace Analysis with visual elements.\n\nANALYZE:\n\n1. Price band distribution per competitor:\n\n   * Budget: under $100\n   * Mid: $100-$300\n   * Premium: $300+\n2. Count products in each price band for each retailer\n3. Discount strategies where discount data is available\n4. Price gaps and underserved segments\n5. Whitespace opportunities for Wayfair, prioritized as High / Medium / Low\n\nDATA RULES:\n\n* Use only the supplied product data.\n* Do not invent prices, discounts, promotions, or assortment details.\n* If discount information is not available for Amazon or IKEA, explicitly state \"Discount data not available\" rather than estimating.\n* Use valid numeric prices only when calculating price bands.\n* Base whitespace opportunities on observable differences in the supplied dataset.\n* Treat the dataset as a sample of the analyzed products, not the retailer's entire catalog.\n\nOUTPUT FORMAT: HTML only, no markdown.\n\n<section class=\"pricing-whitespace\">\n  <h2>Pricing Insights</h2>\n\n  <div class=\"price-bands\">\n    <h3>Price Distribution by Retailer</h3>\n\n```\n<div class=\"band-chart\">\n  <div class=\"band budget\">\n    <span>Budget (&lt;$100)</span>\n    <span>W: [X] | A: [Y] | I: [Z]</span>\n  </div>\n\n  <div class=\"band mid\">\n    <span>Mid ($100-$300)</span>\n    <span>W: [X] | A: [Y] | I: [Z]</span>\n  </div>\n\n  <div class=\"band premium\">\n    <span>Premium ($300+)</span>\n    <span>W: [X] | A: [Y] | I: [Z]</span>\n  </div>\n</div>\n\n<div class=\"insights\">\n  <p><strong>Analysis:</strong> [2-3 sentences explaining the observed price distribution patterns across Wayfair, Amazon, and IKEA.]</p>\n</div>\n```\n\n  </div>\n\n  <div class=\"discount-strategies\">\n    <h3>Discount Strategies</h3>\n\n```\n<div class=\"discount-chart\">\n  <div class=\"discount-tier\">\n    <span>No Discount</span>\n    <span>[Wayfair count if supported]</span>\n  </div>\n\n  <div class=\"discount-tier\">\n    <span>1-30% Off</span>\n    <span>[Wayfair count if supported]</span>\n  </div>\n\n  <div class=\"discount-tier\">\n    <span>31-50% Off</span>\n    <span>[Wayfair count if supported]</span>\n  </div>\n\n  <div class=\"discount-tier\">\n    <span>50%+ Off</span>\n    <span>[Wayfair count if supported]</span>\n  </div>\n</div>\n\n<div class=\"insights\">\n  <p><strong>Key Insight:</strong> [Describe observed discount behavior. Clearly note when Amazon or IKEA discount data is unavailable.]</p>\n</div>\n```\n\n  </div>\n\n  <h2>Whitespace Analysis</h2>\n\n  <div class=\"whitespace-opportunities\">\n    <h3>Market Gaps & Opportunities</h3>\n\n```\n<div class=\"opportunity-cards\">\n\n  <div class=\"opportunity-card high-priority\">\n    <h4>🎯 [High Priority Opportunity Title]</h4>\n    <p>[Describe the observed gap, relevant price range, competitive context, and why it matters for Wayfair.]</p>\n    <span class=\"priority\">High Priority</span>\n    <div class=\"rationale\">\n      <p><strong>Why?</strong> [Brief data-supported justification]</p>\n    </div>\n  </div>\n\n  <div class=\"opportunity-card high-priority\">\n    <h4>🎯 [Another High Priority Opportunity]</h4>\n    <p>[Describe another data-supported opportunity.]</p>\n    <span class=\"priority\">High Priority</span>\n    <div class=\"rationale\">\n      <p><strong>Why?</strong> [Brief data-supported justification]</p>\n    </div>\n  </div>\n\n  <div class=\"opportunity-card medium-priority\">\n    <h4>⚡ [Medium Priority Opportunity]</h4>\n    <p>[Description based on pricing or assortment gaps]</p>\n    <span class=\"priority\">Medium Priority</span>\n  </div>\n\n  <div class=\"opportunity-card low-priority\">\n    <h4>📊 [Low Priority Opportunity]</h4>\n    <p>[Lower-priority or exploratory opportunity supported by the data]</p>\n    <span class=\"priority\">Low Priority</span>\n  </div>\n\n</div>\n```\n\n  </div>\n\n  <div class=\"price-gaps\">\n    <h3>Price Gap Heatmap</h3>\n\n```\n<div class=\"heatmap\">\n  <div class=\"gap [hot/warm/moderate/cool/open]\">\n    <span>$0-$50</span>\n    <span>[Competition level and retailers represented]</span>\n  </div>\n\n  <div class=\"gap [hot/warm/moderate/cool/open]\">\n    <span>$50-$100</span>\n    <span>[Competition level and retailers represented]</span>\n  </div>\n\n  <div class=\"gap [hot/warm/moderate/cool/open]\">\n    <span>$100-$200</span>\n    <span>[Competition level and retailers represented]</span>\n  </div>\n\n  <div class=\"gap [hot/warm/moderate/cool/open]\">\n    <span>$200-$400</span>\n    <span>[Competition level and retailers represented]</span>\n  </div>\n\n  <div class=\"gap [hot/warm/moderate/cool/open]\">\n    <span>$400+</span>\n    <span>[Competition level and retailers represented]</span>\n  </div>\n</div>\n```\n\n  </div>\n\n</section>\n\nIMPORTANT:\n\n* Use actual product counts from the supplied data for each price band.\n* Include 2-3 High Priority opportunities, 1-2 Medium Priority opportunities, and 1 Low Priority opportunity.\n* Make the heatmap reflect the actual competition level shown by the product sample.\n* Do not automatically label any price range as \"High Competition\" or \"Opportunity Zone\"; determine this from the data.\n* Use emojis as shown: 🎯, ⚡, 📊, 🔥, ⚠️, 🟢.\n* W = Wayfair, A = Amazon, I = IKEA in the band chart.\n* If a retailer has zero valid products in a price band, show 0.\n* If discount data is missing for a retailer, say so explicitly rather than making assumptions.\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        3216,
+        0
+      ],
+      "id": "35066319-3810-4561-adb7-1e3eecfe76b2",
+      "name": "Pricing & Whitespace Generator"
+    },
+    {
+      "parameters": {
+        "amount": 25
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        3584,
+        0
+      ],
+      "id": "775eb7e2-8e89-49cf-baae-ad935cbff4a5",
+      "name": "Wait After Pricing"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=CATEGORY: {{ $('Input Parser').first().json.categoryDisplayName }}\n\nEXECUTIVE SUMMARY:\n{{ $('Executive Summary Generator').first().json.output }}\n\nAMAZON ANALYSIS:\n{{ $('Amazon Analysis Generator').first().json.output }}\n\nCOMPARISON:\n{{ $('Comparison Generator').first().json.output }}\n\nPRICING & WHITESPACE:\n{{ $('Pricing & Whitespace Generator').first().json.output }}",
+        "options": {
+          "systemMessage": "You are a senior strategy consultant. Based on all the analysis of Wayfair vs Amazon vs IKEA, provide actionable recommendations for Wayfair.\n\nTASK: Create Strategic Recommendations with clear prioritization and visual hierarchy.\n\nPROVIDE:\n\n1. 2-3 Quick Wins (immediate actions, high impact)\n2. 3-4 Strategic Initiatives (longer-term plays)\n3. Each recommendation must include:\n\n   * Title\n   * Description\n   * Priority level\n   * Expected impact\n4. At least one recommendation should specifically address IKEA competition.\n5. At least one recommendation should specifically address Amazon competition.\n6. Recommendations should be based only on findings from the supplied analysis.\n\nOUTPUT FORMAT: HTML only, no markdown.\n\n<section class=\"recommendations\">\n  <h2>Strategic Recommendations</h2>\n\n  <div class=\"quick-wins\">\n    <h3>🚀 Quick Wins (Immediate Actions)</h3>\n\n```\n<div class=\"rec-cards\">\n\n  <div class=\"rec-card priority-high\">\n    <h4>1. [Recommendation Title]</h4>\n    <p>[Detailed description in 2-3 sentences explaining what Wayfair should do, why it matters, and which competitor this addresses: Amazon, IKEA, or both.]</p>\n\n    <div class=\"rec-meta\">\n      <span class=\"priority\">High Priority</span>\n      <span class=\"impact\">Impact: High</span>\n    </div>\n  </div>\n\n  <div class=\"rec-card priority-high\">\n    <h4>2. [Recommendation Title]</h4>\n    <p>[Detailed description addressing a specific competitor threat, pricing gap, assortment opportunity, or customer need identified in the analysis.]</p>\n\n    <div class=\"rec-meta\">\n      <span class=\"priority\">High Priority</span>\n      <span class=\"impact\">Impact: High</span>\n    </div>\n  </div>\n\n  <div class=\"rec-card priority-high\">\n    <h4>3. [Optional Third Quick Win]</h4>\n    <p>[Use only if the supplied analysis supports a distinct additional immediate action.]</p>\n\n    <div class=\"rec-meta\">\n      <span class=\"priority\">High Priority</span>\n      <span class=\"impact\">Impact: High</span>\n    </div>\n  </div>\n\n</div>\n```\n\n  </div>\n\n  <div class=\"strategic-plays\">\n    <h3>📊 Strategic Initiatives</h3>\n\n```\n<div class=\"rec-cards\">\n\n  <div class=\"rec-card priority-high\">\n    <h4>4. [Strategic Initiative Title]</h4>\n    <p>[Explain the longer-term strategy, the competitor gap it addresses, and the expected benefit for Wayfair.]</p>\n\n    <div class=\"rec-meta\">\n      <span class=\"priority\">High Priority</span>\n      <span class=\"impact\">Impact: High</span>\n    </div>\n  </div>\n```"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        3808,
+        0
+      ],
+      "id": "8f9ffe5b-b4b1-411f-b0b8-340e978c99e9",
+      "name": "Recommendations Generator"
+    },
+    {
+      "parameters": {
+        "amount": 25
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        4160,
+        0
+      ],
+      "id": "e583efda-2f73-4d86-9319-a954bee97756",
+      "name": "Wait1"
+    },
+    {
+      "parameters": {
+        "model": "openrouter/free",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        4384,
+        208
+      ],
+      "id": "b48f1b82-1f3a-496c-aeac-a7b4d9230afa",
+      "name": "OpenRouter Chat Model1"
+    },
+    {
+      "parameters": {
+        "content": "## STAGE 5: DASHBOARD GENERATOR\n",
+        "height": 560,
+        "width": 3536,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1168,
+        -192
+      ],
+      "typeVersion": 1,
+      "id": "3a1cc70b-25a0-4ff9-9ab7-97519ecbbd62",
+      "name": "Sticky Note4"
+    },
+    {
+      "parameters": {
+        "jsCode": "// HTML ASSEMBLER - Combines all sections into final report\n// Retailers: Wayfair, Amazon, IKEA\n\nconst category = $('Input Parser').first().json.categoryDisplayName || 'Rugs';\n\nconst scopeHtml =\n  $('Scope Generator').first().json.html || '';\n\nconst execSummary =\n  $('Executive Summary Generator').first().json.output || '';\n\n// This node now analyzes Amazon + IKEA\nconst competitorAnalysis =\n  $('Amazon Analysis Generator').first().json.output || '';\n\nconst comparison =\n  $('Comparison Generator').first().json.output || '';\n\nconst pricingWhitespace =\n  $('Pricing & Whitespace Generator').first().json.output || '';\n\nconst recommendations =\n  $('Recommendations Generator').first().json.output || '';\n\nconst supplierIdentification =\n  $('Supplier Identification Generator').first().json.output || '';\n\nconst fullHtml = `<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"UTF-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n\n  <title>Competitor Analysis Report - ${category}</title>\n\n  <link\n    href=\"https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap\"\n    rel=\"stylesheet\"\n  >\n\n  <style>\n\n    :root {\n      --primary: #7C3AED;\n      --primary-light: #A78BFA;\n\n      --success: #059669;\n      --warning: #D97706;\n      --danger: #DC2626;\n\n      --gray-50: #F9FAFB;\n      --gray-100: #F3F4F6;\n      --gray-200: #E5E7EB;\n      --gray-500: #6B7280;\n      --gray-700: #374151;\n      --gray-900: #111827;\n    }\n\n    * {\n      box-sizing: border-box;\n      margin: 0;\n      padding: 0;\n    }\n\n    body {\n      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;\n      line-height: 1.6;\n      color: var(--gray-700);\n      background: var(--gray-50);\n      padding: 2rem;\n    }\n\n    .report-container {\n      max-width: 1200px;\n      margin: 0 auto;\n      background: white;\n      border-radius: 12px;\n      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);\n      overflow: hidden;\n    }\n\n    .report-header {\n      background: linear-gradient(\n        135deg,\n        var(--primary) 0%,\n        #5B21B6 100%\n      );\n\n      color: white;\n      padding: 3rem;\n      text-align: center;\n    }\n\n    .report-header h1 {\n      font-size: 2.5rem;\n      font-weight: 700;\n      margin-bottom: 0.5rem;\n    }\n\n    .report-header .subtitle {\n      opacity: 0.9;\n      font-size: 1.1rem;\n    }\n\n    .report-content {\n      padding: 2rem 3rem;\n    }\n\n    section {\n      margin-bottom: 3rem;\n      padding-bottom: 2rem;\n      border-bottom: 1px solid var(--gray-200);\n    }\n\n    section:last-child {\n      border-bottom: none;\n    }\n\n    h2 {\n      color: var(--gray-900);\n      font-size: 1.75rem;\n      font-weight: 600;\n      margin-bottom: 1.5rem;\n      padding-bottom: 0.5rem;\n      border-bottom: 3px solid var(--primary);\n      display: inline-block;\n    }\n\n    h3 {\n      color: var(--gray-700);\n      font-size: 1.25rem;\n      font-weight: 600;\n      margin: 1.5rem 0 1rem;\n    }\n\n    h4 {\n      color: var(--gray-700);\n      font-size: 1rem;\n      font-weight: 600;\n      margin-bottom: 0.5rem;\n    }\n\n\n    /* =========================\n       Scope & Statistics\n       ========================= */\n\n    .scope-grid,\n    .stats-grid,\n    .profile-grid {\n      display: grid;\n      grid-template-columns:\n        repeat(auto-fit, minmax(250px, 1fr));\n      gap: 1.5rem;\n      margin: 1rem 0;\n    }\n\n    .scope-card,\n    .stat-card,\n    .profile-card {\n      background: var(--gray-50);\n      padding: 1.5rem;\n      border-radius: 8px;\n      border: 1px solid var(--gray-200);\n    }\n\n    .scope-value,\n    .stat-value {\n      font-size: 1.5rem;\n      font-weight: 700;\n      color: var(--primary);\n    }\n\n    .stat-label {\n      display: block;\n      font-size: 0.875rem;\n      color: var(--gray-500);\n      margin-top: 0.25rem;\n    }\n\n\n    /* =========================\n       Executive Summary\n       ========================= */\n\n    .summary-hero {\n      background: linear-gradient(\n        135deg,\n        #F3E8FF 0%,\n        #E0E7FF 100%\n      );\n\n      padding: 2rem;\n      border-radius: 12px;\n      margin-bottom: 1.5rem;\n    }\n\n    .key-insight .label {\n      background: var(--primary);\n      color: white;\n      padding: 0.25rem 0.75rem;\n      border-radius: 4px;\n      font-size: 0.75rem;\n      font-weight: 600;\n      text-transform: uppercase;\n    }\n\n    .key-insight p {\n      font-size: 1.25rem;\n      font-weight: 500;\n      color: var(--gray-900);\n      margin-top: 1rem;\n    }\n\n    .summary-points ul,\n    .feature-analysis ul {\n      list-style: none;\n    }\n\n    .summary-points li,\n    .feature-analysis li {\n      padding: 0.75rem 0;\n      border-bottom: 1px solid var(--gray-100);\n    }\n\n\n    /* =========================\n       Tables\n       ========================= */\n\n    .data-table,\n    .comparison-table {\n      width: 100%;\n      border-collapse: collapse;\n      margin: 1rem 0;\n    }\n\n    .data-table th,\n    .comparison-table th {\n      background: var(--gray-100);\n      padding: 1rem;\n      text-align: left;\n      font-weight: 600;\n    }\n\n    .data-table td,\n    .comparison-table td {\n      padding: 1rem;\n      border-bottom: 1px solid var(--gray-200);\n      vertical-align: top;\n    }\n\n    .data-table a {\n      color: var(--primary);\n      text-decoration: none;\n      font-weight: 500;\n    }\n\n    .data-table a:hover {\n      text-decoration: underline;\n    }\n\n\n    /* =========================\n       Winner Badges\n       ========================= */\n\n    .winner {\n      font-weight: 600;\n    }\n\n    .winner-badge {\n      display: inline-block;\n      padding: 4px 12px;\n      border-radius: 20px;\n      font-weight: 600;\n      font-size: 0.85rem;\n    }\n\n    .winner-wayfair {\n      background: #D1FAE5;\n      color: #065F46;\n    }\n\n    .winner-amazon {\n      background: #FEF3C7;\n      color: #92400E;\n    }\n\n    .winner-ikea {\n      background: #DBEAFE;\n      color: #1E40AF;\n    }\n\n    .winner-tie {\n      background: #F3F4F6;\n      color: #374151;\n    }\n\n    .winner-insufficient {\n      background: #F3F4F6;\n      color: #6B7280;\n    }\n\n\n    /* =========================\n       Pricing Bands\n       ========================= */\n\n    .band-chart {\n      display: flex;\n      gap: 10px;\n      margin: 20px 0;\n      flex-wrap: wrap;\n    }\n\n    .band {\n      flex: 1;\n      min-width: 150px;\n      padding: 20px 15px;\n      border-radius: 8px;\n      color: white;\n      text-align: center;\n      font-weight: bold;\n      box-shadow: 0 2px 4px rgba(0,0,0,0.1);\n    }\n\n    .band span {\n      display: block;\n    }\n\n    .band span:first-child {\n      font-size: 0.9rem;\n      margin-bottom: 8px;\n      opacity: 0.9;\n    }\n\n    .band span:last-child {\n      font-size: 1.1rem;\n    }\n\n    .band.budget {\n      background: linear-gradient(\n        135deg,\n        #E74C3C 0%,\n        #C0392B 100%\n      );\n    }\n\n    .band.mid {\n      background: linear-gradient(\n        135deg,\n        #F39C12 0%,\n        #D68910 100%\n      );\n    }\n\n    .band.premium {\n      background: linear-gradient(\n        135deg,\n        #27AE60 0%,\n        #1E8449 100%\n      );\n    }\n\n\n    /* =========================\n       Discount Tiers\n       ========================= */\n\n    .discount-chart {\n      display: flex;\n      gap: 10px;\n      margin: 20px 0;\n      flex-wrap: wrap;\n    }\n\n    .discount-tier {\n      flex: 1;\n      min-width: 120px;\n      padding: 15px;\n      background: var(--gray-100);\n      border-radius: 8px;\n      text-align: center;\n      border: 1px solid var(--gray-200);\n    }\n\n    .discount-tier span {\n      display: block;\n    }\n\n    .discount-tier span:first-child {\n      font-size: 0.85rem;\n      color: var(--gray-500);\n      margin-bottom: 5px;\n    }\n\n    .discount-tier span:last-child {\n      font-size: 1.25rem;\n      font-weight: 700;\n      color: var(--primary);\n    }\n\n\n    /* =========================\n       Opportunity Cards\n       ========================= */\n\n    .opportunity-cards {\n      display: grid;\n      grid-template-columns:\n        repeat(auto-fit, minmax(300px, 1fr));\n      gap: 20px;\n      margin-top: 20px;\n    }\n\n    .opportunity-card,\n    .rec-card {\n      background: white;\n      border: 1px solid var(--gray-200);\n      border-radius: 8px;\n      padding: 1.5rem;\n      margin-bottom: 1rem;\n      box-shadow: 0 2px 4px rgba(0,0,0,0.05);\n    }\n\n    .opportunity-card.high-priority {\n      border-left: 4px solid #E74C3C;\n      background-color: #FDF2F2;\n    }\n\n    .opportunity-card.medium-priority {\n      border-left: 4px solid #F39C12;\n      background-color: #FFFBF0;\n    }\n\n    .opportunity-card.low-priority {\n      border-left: 4px solid #3498DB;\n      background-color: #F0F7FF;\n    }\n\n    .rec-card.priority-high {\n      border-left: 4px solid #E74C3C;\n      background-color: #FDF2F2;\n    }\n\n    .rec-card.priority-medium {\n      border-left: 4px solid #F39C12;\n      background-color: #FFFBF0;\n    }\n\n    .rec-card.priority-low {\n      border-left: 4px solid #3498DB;\n      background-color: #F0F7FF;\n    }\n\n\n    /* =========================\n       Priority Badges\n       ========================= */\n\n    .priority {\n      display: inline-block;\n      margin-top: 10px;\n      padding: 4px 12px;\n      border-radius: 20px;\n      font-size: 0.75rem;\n      font-weight: 600;\n      text-transform: uppercase;\n    }\n\n    .high-priority .priority,\n    .priority-high .priority {\n      background-color: #E74C3C;\n      color: white;\n    }\n\n    .medium-priority .priority,\n    .priority-medium .priority {\n      background-color: #F39C12;\n      color: white;\n    }\n\n    .low-priority .priority,\n    .priority-low .priority {\n      background-color: #3498DB;\n      color: white;\n    }\n\n\n    /* =========================\n       Price Gap Heatmap\n       ========================= */\n\n    .heatmap {\n      margin-top: 20px;\n    }\n\n    .gap {\n      display: flex;\n      justify-content: space-between;\n      align-items: center;\n      gap: 1rem;\n      padding: 12px 16px;\n      margin: 8px 0;\n      border-radius: 6px;\n      font-weight: 500;\n    }\n\n    .gap span:last-child {\n      font-weight: 600;\n    }\n\n    .gap.hot {\n      background-color: #FDE8E8;\n      color: #991B1B;\n    }\n\n    .gap.warm {\n      background-color: #FEF3C7;\n      color: #92400E;\n    }\n\n    .gap.moderate {\n      background-color: #FEF9C3;\n      color: #854D0E;\n    }\n\n    .gap.cool,\n    .gap.open {\n      background-color: #D1FAE5;\n      color: #065F46;\n    }\n\n\n    /* =========================\n       Recommendations\n       ========================= */\n\n    .rec-cards {\n      display: grid;\n      gap: 1rem;\n      margin-top: 1rem;\n    }\n\n    .rec-meta {\n      display: flex;\n      gap: 1rem;\n      align-items: center;\n      margin-top: 1rem;\n      padding-top: 1rem;\n      border-top: 1px solid var(--gray-100);\n      flex-wrap: wrap;\n    }\n\n    .impact {\n      color: var(--gray-500);\n      font-size: 0.875rem;\n    }\n\n\n    /* =========================\n       Insights\n       ========================= */\n\n    .insights,\n    .rationale {\n      background-color: var(--gray-50);\n      padding: 12px 16px;\n      border-radius: 6px;\n      margin-top: 12px;\n      font-size: 0.9rem;\n      border-left: 3px solid var(--primary-light);\n    }\n\n\n    /* =========================\n       Responsive Tables\n       ========================= */\n\n    @media (max-width: 800px) {\n\n      body {\n        padding: 0.75rem;\n      }\n\n      .report-content {\n        padding: 1.5rem;\n      }\n\n      .report-header {\n        padding: 2rem 1rem;\n      }\n\n      .report-header h1 {\n        font-size: 2rem;\n      }\n\n      .data-table,\n      .comparison-table {\n        font-size: 0.85rem;\n      }\n\n      .data-table th,\n      .data-table td,\n      .comparison-table th,\n      .comparison-table td {\n        padding: 0.65rem;\n      }\n    }\n\n\n    /* =========================\n       Footer\n       ========================= */\n\n    .report-footer {\n      background: var(--gray-100);\n      padding: 1.5rem 3rem;\n      text-align: center;\n      font-size: 0.875rem;\n      color: var(--gray-500);\n    }\n\n  </style>\n</head>\n\n<body>\n\n  <div class=\"report-container\">\n\n    <header class=\"report-header\">\n      <h1>Competitor Analysis Report</h1>\n      <p class=\"subtitle\">\n        ${category} - Wayfair vs Amazon vs IKEA\n      </p>\n    </header>\n\n    <main class=\"report-content\">\n\n      ${execSummary}\n\n      ${scopeHtml}\n\n      ${competitorAnalysis}\n\n      ${comparison}\n\n      ${pricingWhitespace}\n\n      ${recommendations}\n\n      ${supplierIdentification}\n\n    </main>\n\n    <footer class=\"report-footer\">\n      <p>\n        Generated on\n        ${new Date().toLocaleDateString('en-US', {\n          year: 'numeric',\n          month: 'long',\n          day: 'numeric'\n        })}\n        | Wayfair Competitive Intelligence\n      </p>\n    </footer>\n\n  </div>\n\n</body>\n</html>`;\n\n\nreturn [{\n  json: {\n\n    output: fullHtml,\n\n    sections: {\n      scope: !!scopeHtml,\n      executive: !!execSummary,\n      competitorAnalysis: !!competitorAnalysis,\n      comparison: !!comparison,\n      pricing: !!pricingWhitespace,\n      recommendations: !!recommendations,\n      supplierIdentification: !!supplierIdentification\n    },\n\n    retailers: [\n      'Wayfair',\n      'Amazon',\n      'IKEA'\n    ],\n\n    category,\n\n    generatedAt: new Date().toISOString()\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4816,
+        0
+      ],
+      "id": "c28872df-f855-483b-a8d0-9955d1025487",
+      "name": "HTML Assembler"
+    },
+    {
+      "parameters": {
+        "jsCode": "// === INPUT: Raw LLM output (string) from previous node ===\nlet html = $input.first().json.output || \"\";\n\n// 1. Remove Markdown code fences\nhtml = html.replace(/```html|```/g, \"\").trim();\n\n// 2. Un-escape newlines / tabs / carriage returns and collapse excess whitespace\nhtml = html\n  .replace(/\\\\n/g, \"\\n\")\n  .replace(/\\\\t/g, \"\\t\")\n  .replace(/\\\\r/g, \"\")\n  .replace(/\\s{2,}/g, \" \")          // multiple spaces → one space\n  .replace(/\\n\\s*\\n/g, \"\\n\")        // blank lines → single newline\n  .trim();\n\n// 3. Remove any duplicate/malformed wrappers that the LLM might have added\nhtml = html\n  .replace(/<\\/?(html|body)>/gi, \"\")   // strip stray <html>/<body>\n  .replace(/<!DOCTYPE\\s+html?>/gi, \"\") // strip stray doctype\n  .trim();\n\n// 4. Ensure a **single** valid HTML5 skeleton\nif (!/<!DOCTYPE\\s+html/i.test(html)) {\n  html = \"<!DOCTYPE html>\\n\" + html;\n}\nif (!/<html[\\s>]/i.test(html)) {\n  html = html.replace(/^/, \"<html lang=\\\"en\\\">\\n\");\n}\nif (!/<body[\\s>]/i.test(html)) {\n  html = html.replace(/^(.*?)<html[^>]*>/i, \"$1<html lang=\\\"en\\\"><body>\\n\");\n  html += \"\\n</body>\";\n}\nif (!/<\\/html>/i.test(html)) {\n  html += \"\\n</html>\";\n}\n\n// 5. Light minify – keep all styles, just remove empty lines between tags\nhtml = html.replace(/>\\n\\s*</g, \"><\");\n\n// === OUTPUT: Clean, untouched-style HTML ===\nreturn [{\n  json: {\n    cleaned_html: html,                     // full readable HTML (preserves all CSS)\n    minified_html: html.replace(/\\s+/g, \" \"),// optional one-liner version\n    agent_id: 3,\n    debug: {\n      original_length: ($input.first().json.output || \"\").length,\n      cleaned_length: html.length,\n      fences_removed: true,\n      wrappers_fixed: true\n    }\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        5008,
+        0
+      ],
+      "id": "a336e23c-ab80-43a1-a446-85176ff14425",
+      "name": "Clean AI output"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Create downloadable HTML file\nconst html = $input.first().json.minified_html || $input.first().json.cleanedHtml || $input.first().json.html || '';\nconst category = $('Input Parser').first().json.categoryDisplayName || 'Rug';\n\n// Generate filename matching P2's pattern: <category_slug>_competitor_report_<YYYY-MM-DD>.html\nconst dateStr = new Date().toISOString().split('T')[0];\nconst categorySlug = category.toLowerCase().replace(/\\s+/g, '_');\nconst fileName = `${categorySlug}_competitor_report_${dateStr}.html`;\n\n// Create binary data for download\nconst buffer = Buffer.from(html, 'utf8');\n\nreturn [{\n  json: {\n    fileName: fileName,\n    category: category,\n    generatedAt: new Date().toISOString()\n  },\n  binary: {\n    data: {\n      data: buffer.toString('base64'),\n      mimeType: 'text/html',\n      fileName: fileName\n    }\n  }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        5264,
+        0
+      ],
+      "id": "4020d026-5b82-47e9-8998-0729a6c6baab",
+      "name": "Download HTML file from Here"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.html",
+      "typeVersion": 1.2,
+      "position": [
+        5488,
+        0
+      ],
+      "id": "365da1fe-536b-42b5-ab2b-9830736a63c3",
+      "name": "See HTML output here"
+    },
+    {
+      "parameters": {
+        "model": "openrouter/free",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        2672,
+        176
+      ],
+      "id": "480b8caa-9363-4261-ab02-75928b1e3cb4",
+      "name": "OpenRouter Chat Model3"
+    },
+    {
+      "parameters": {
+        "model": "openrouter/free",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        3216,
+        176
+      ],
+      "id": "3d68b952-d7c5-4d60-97dd-2ce3152b2452",
+      "name": "OpenRouter Chat Model4"
+    },
+    {
+      "parameters": {
+        "model": "openrouter/free",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        3808,
+        192
+      ],
+      "id": "8bbdafba-3142-4d51-8cd9-9233b74eed5e",
+      "name": "OpenRouter Chat Model5"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=CATEGORY: {{ $('Input Parser').first().json.categoryDisplayName }}\n\nAMAZON PRODUCTS:\n{{ JSON.stringify(\n  $('Reshape Amazon Response').first().json.amazonProducts\n    ?.map(p => ({\n      name: p.name,\n      brand: p.brand,\n      url: p.url,\n      price: p.price\n    }))\n    .slice(0, 10),\n  null,\n  2\n) }}\n\nIKEA PRODUCTS:\n{{ JSON.stringify(\n  $('Reshape IKEA Response').first().json.ikeaProducts\n    ?.map(p => ({\n      name: p.name,\n      url: p.url,\n      price: p.price,\n      category: p.category\n    }))\n    .slice(0, 10),\n  null,\n  2\n) }}\n\nWAYFAIR PRODUCTS:\n{{ JSON.stringify(\n  $('Reshape Wayfair Response').first().json.wayfair_products\n    ?.map(p => ({\n      title: p.title,\n      manufacturer: p.manufacturer,\n      url: p.url,\n      price: p.price\n    }))\n    .slice(0, 10),\n  null,\n  2\n) }}",
+        "options": {
+          "systemMessage": "You are a sourcing analyst specializing in home goods supply chain. Identify suppliers and brands from competitor product data.\n\nTASK: Create a Supplier Identification & Sourcing Opportunities section.\n\nANALYZE THE DATA TO:\n\n1. Extract all unique brand/supplier names that are explicitly identifiable from Amazon and IKEA product data.\n2. Compare those names against Wayfair's manufacturer list.\n3. Identify brands or suppliers that appear in Amazon or IKEA data but do not appear in the supplied Wayfair manufacturer data.\n4. Note what each identifiable supplier appears to be associated with based on the supplied products, such as style, price point, or features.\n5. Identify sourcing opportunities for Wayfair that are supported by the data.\n\nIMPORTANT DATA RULES:\n\n* Use only the supplied product data.\n* Do not invent supplier names, brands, websites, manufacturing capabilities, partnerships, or market presence.\n* Do not assume the first word of an IKEA product name is a brand unless the data explicitly identifies it as such.\n* IKEA may function as the retailer/brand itself in the supplied dataset. If no separate supplier is available, use \"IKEA\" as the identifiable platform/brand and do not infer an underlying manufacturer.\n* If a supplier cannot be confidently identified, omit it rather than guessing.\n* A brand that is absent from the supplied Wayfair sample should be described as \"not observed in the supplied Wayfair data,\" not definitively absent from Wayfair's entire catalog.\n* Do not claim a brand is suitable for private label or exclusive partnership unless the supplied data supports that conclusion. If evidence is limited, frame it as a sourcing lead for further investigation.\n\nOUTPUT FORMAT: HTML only, no markdown.\n\n<section class=\"supplier-identification\">\n  <h2>Supplier Identification & Sourcing Opportunities</h2>\n\n  <div class=\"suppliers-observed\">\n    <h3>Major Suppliers / Brands Observed</h3>\n\n```\n<table class=\"data-table\">\n  <thead>\n    <tr>\n      <th>Supplier / Brand</th>\n      <th>Platform</th>\n      <th>Observed Positioning</th>\n      <th>Price Range</th>\n      <th>Product Link</th>\n    </tr>\n  </thead>\n\n  <tbody>\n    <tr>\n      <td><strong>[Brand or Supplier Name]</strong></td>\n      <td>[Amazon / IKEA / Both]</td>\n      <td>[Observed styles, features, or positioning based only on supplied products]</td>\n      <td>$[X] - $[Y]</td>\n      <td><a href=\"[product_url_if_available]\">View Product</a></td>\n    </tr>\n  </tbody>\n</table>\n```\n\n  </div>\n\n  <div class=\"sourcing-opportunities\">\n    <h3>Sourcing Opportunities</h3>\n\n```\n<div class=\"opportunity-cards\">\n\n  <div class=\"opportunity-card high-priority\">\n    <h4>🎯 Brands Not Observed in the Wayfair Sample</h4>\n\n    <p>The following identifiable brands or suppliers appear in Amazon or IKEA data but were not observed in the supplied Wayfair manufacturer sample:</p>\n\n    <ul>\n      <li><strong>[Brand]</strong> - [Why it may be worth further sourcing investigation based on style, price point, ratings, or product features]</li>\n      <li><strong>[Brand]</strong> - [Data-supported rationale]</li>\n      <li><strong>[Brand]</strong> - [Data-supported rationale]</li>\n    </ul>\n\n    <span class=\"priority\">High Priority</span>\n  </div>\n\n  <div class=\"opportunity-card medium-priority\">\n    <h4>⚡ Assortment Gaps to Investigate</h4>\n\n    <p>These observed competitor products or brands may point to assortment gaps worth investigating:</p>\n\n    <ul>\n      <li><strong>[Brand or IKEA]</strong> - [Observed style, feature, or price point that appears less represented in the supplied Wayfair sample]</li>\n      <li><strong>[Brand or IKEA]</strong> - [Observed opportunity supported by the data]</li>\n    </ul>\n\n    <span class=\"priority\">Medium Priority</span>\n  </div>\n\n  <div class=\"opportunity-card medium-priority\">\n    <h4>🏭 Supplier Leads for Further Evaluation</h4>\n\n    <p>These suppliers or brands may warrant additional sourcing research based on the supplied competitor data:</p>\n\n    <ul>\n      <li><strong>[Brand]</strong> - [Why it merits further investigation]</li>\n      <li><strong>[Brand]</strong> - [Why it merits further investigation]</li>\n    </ul>\n\n    <span class=\"priority\">Medium Priority</span>\n  </div>\n\n</div>\n```\n\n  </div>\n\n  <div class=\"supplier-insights\">\n    <h3>Key Supplier Insights</h3>\n\n```\n<div class=\"insights\">\n  <ul>\n    <li><strong>Amazon Brand Mix:</strong> [Which identifiable brands appear most frequently or prominently in the supplied Amazon sample]</li>\n    <li><strong>IKEA Positioning:</strong> [What the supplied IKEA products suggest about IKEA's assortment, styles, or price positioning]</li>\n    <li><strong>Price Point Gaps:</strong> [Where potential supplier or assortment opportunities appear by price]</li>\n    <li><strong>Sourcing Leads:</strong> [Which identifiable brands or suppliers deserve further research based on the supplied data]</li>\n  </ul>\n</div>\n```\n\n  </div>\n</section>\n\nBRAND IDENTIFICATION GUIDELINES:\n\n* Prefer explicit brand or manufacturer fields from the data.\n* For Amazon, use the supplied `brand` field when available.\n* For Wayfair, use the supplied `manufacturer` field.\n* For IKEA, use an explicit supplier/brand field only if one exists in the data.\n* If IKEA products do not contain a separate supplier field, treat IKEA as the identifiable retailer/brand and do not guess the manufacturer.\n* Do not identify a brand solely because it is a familiar rug brand from outside knowledge.\n\nIMPORTANT:\n\n* Only include brands or suppliers that can actually be identified from the supplied product data.\n* Compare competitor brands against Wayfair's supplied manufacturer list.\n* If fewer than 5 distinct brands can be confidently identified, include fewer than 5 rather than inventing additional brands.\n* Use actual observed price data when calculating price ranges.\n* If a product URL is available, use it as the link.\n* If no link is available, display the brand/supplier name without a hyperlink.\n* Frame all sourcing opportunities as data-supported leads, not confirmed partnership recommendations.\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        4384,
+        0
+      ],
+      "id": "af5627f3-1391-4735-8bd7-c04f59d3a6a6",
+      "name": "Supplier Identification Generator"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.apify.com/v2/actors/scraptivo~ikea-scraper/run-sync-get-dataset-items",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer REPLACE_WITH_YOUR_TOKEN"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"searchQueries\": [\n    \"{{$json.category}} rugs\"\n  ],\n  \"countryCode\": \"us\",\n  \"languageCode\": \"en\",\n  \"maxItems\": 10,\n  \"maxReviews\": 5,\n  \"proxyConfiguration\": {\n    \"useApifyProxy\": true\n  }\n}",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        272,
+        16
+      ],
+      "id": "d25ccd17-511c-49be-9694-2c42cb7377db",
+      "name": "Fetch IKEA Product",
+      "retryOnFail": true,
+      "waitBetweenTries": 5000,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "url": "http://YOUR_AUTHORIZED_DATA_API:8000/api/products/wayfair",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "category",
+              "value": "={{ $('Input Parser').item.json.categoryKey }}"
+            },
+            {
+              "name": "limit",
+              "value": "10"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        288,
+        -256
+      ],
+      "id": "84123498-9944-487b-aa1c-fe7e9a190c1e",
+      "name": "Fetch Wayfair Products",
+      "retryOnFail": true,
+      "waitBetweenTries": 5000,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Reshape FastAPI response to the legacy shape that downstream consumers expect.\nconst r = $input.first().json;\nconst products = r.products || [];\nreturn [{\n  json: {\n    wayfair_products: products.map(p => ({\n      url: p.url,\n      name: p.name,\n      price: p.price,\n      details: p.details || [],\n      pattern: p.pattern || '',\n      image_url: p.image_url || '',\n      rating: p.rating || '',\n      review_count: p.review_count || '',\n      scraped_at: r.scraped_at || new Date().toISOString(),\n    })),\n    totalWayfair: products.length,\n    totalProducts: products.length,\n    scrapedAt: r.scraped_at || new Date().toISOString(),\n  },\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        624,
+        -256
+      ],
+      "id": "1e5d7c40-fda3-4874-a9f6-bb6242e5f337",
+      "name": "Reshape Wayfair Response"
+    },
+    {
+      "parameters": {
+        "jsCode": "// RESHAPE IKEA RESPONSE\n// Convert Apify's individual product items into one array\n// matching the Amazon/Wayfair structure.\n\nconst products = $input.all()\n  .slice(0, 10)\n  .map(item => item.json)\n  .map(p => ({\n    retailer: \"IKEA\",\n    name: p.name ?? p.title ?? null,\n    price: p.price ?? p.formattedPrice ?? null,\n    rating: p.rating ?? null,\n    review_count: p.reviewCount ?? p.review_count ?? null,\n    url: p.url ?? p.product_url ?? null,\n    image_url: p.image ?? p.mainImage ?? p.image_url ?? null,\n    category: p.category ?? null\n  }));\n\nreturn [{\n  json: {\n    ikeaProducts: products,\n    totalIkeaProducts: products.length,\n    totalProducts: products.length,\n    scrapedAt: new Date().toISOString()\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        608,
+        16
+      ],
+      "id": "2e9e26c6-e0a4-4299-99b3-f7c56670efbf",
+      "name": "Reshape IKEA Response"
+    },
+    {
+      "parameters": {
+        "url": "http://YOUR_AUTHORIZED_DATA_API:8000/api/products/amazon",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "category",
+              "value": "={{ $('Input Parser').item.json.categoryKey }}"
+            },
+            {
+              "name": "limit",
+              "value": "10"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        320,
+        352
+      ],
+      "id": "e90449e1-8db8-4c0a-a8d4-897994e3736b",
+      "name": "HTTP Request",
+      "retryOnFail": true,
+      "waitBetweenTries": 5000,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Reshape FastAPI response to the legacy shape that downstream consumers expect.\nconst r = $input.first().json;\nconst products = r.products || [];\nreturn [{\n  json: {\n    amazonProducts: products.map(p => ({\n      url: p.url,\n      name: p.name,\n      price: p.price,\n      details: p.details || [],\n      pattern: p.pattern || '',\n      image_url: p.image_url || '',\n      rating: p.rating || '',\n      review_count: p.review_count || '',\n      scraped_at: r.scraped_at || new Date().toISOString(),\n    })),\n    totalAmazonProducts: products.length,\n    totalProducts: products.length,\n    scrapedAt: r.scraped_at || new Date().toISOString(),\n  },\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        544,
+        352
+      ],
+      "id": "76a676bd-7dc3-41f3-854c-84284a01685e",
+      "name": "Reshape Amazon Response"
+    },
+    {
+      "parameters": {
+        "model": "openrouter/free",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        1760,
+        176
+      ],
+      "id": "ac5e6b74-437c-401e-bb3c-9c9498c00607",
+      "name": "OpenRouter Chat Model2"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "Input Parser",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Input Parser": {
+      "main": [
+        [
+          {
+            "node": "Fetch IKEA Product",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Fetch Wayfair Products",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Scope Generator",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Scope Generator": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "Executive Summary Generator",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Executive Summary Generator": {
+      "main": [
+        [
+          {
+            "node": "Wait After Executive",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait After Executive": {
+      "main": [
+        [
+          {
+            "node": "Amazon Analysis Generator",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Amazon Analysis Generator",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Amazon Analysis Generator": {
+      "main": [
+        [
+          {
+            "node": "Wait After Amazon",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait After Amazon": {
+      "main": [
+        [
+          {
+            "node": "Comparison Generator",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Comparison Generator": {
+      "main": [
+        [
+          {
+            "node": "Wait After Comparison",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait After Comparison": {
+      "main": [
+        [
+          {
+            "node": "Pricing & Whitespace Generator",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pricing & Whitespace Generator": {
+      "main": [
+        [
+          {
+            "node": "Wait After Pricing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait After Pricing": {
+      "main": [
+        [
+          {
+            "node": "Recommendations Generator",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Recommendations Generator": {
+      "main": [
+        [
+          {
+            "node": "Wait1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait1": {
+      "main": [
+        [
+          {
+            "node": "Supplier Identification Generator",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Supplier Identification Generator",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTML Assembler": {
+      "main": [
+        [
+          {
+            "node": "Clean AI output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Clean AI output": {
+      "main": [
+        [
+          {
+            "node": "Download HTML file from Here",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download HTML file from Here": {
+      "main": [
+        [
+          {
+            "node": "See HTML output here",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model3": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Comparison Generator",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model4": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Pricing & Whitespace Generator",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model5": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Recommendations Generator",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supplier Identification Generator": {
+      "main": [
+        [
+          {
+            "node": "HTML Assembler",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch IKEA Product": {
+      "main": [
+        [
+          {
+            "node": "Reshape IKEA Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Wayfair Products": {
+      "main": [
+        [
+          {
+            "node": "Reshape Wayfair Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reshape Wayfair Response": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reshape IKEA Response": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Reshape Amazon Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reshape Amazon Response": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model2": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Executive Summary Generator",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "nodeGroups": [],
+  "id": "ABokpp2SMCaKDoOd",
+  "tags": []
+}
